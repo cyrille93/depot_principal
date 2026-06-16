@@ -18,8 +18,10 @@ import { NotificationsBell } from "@/components/NotificationsBell";
 function Logo() {
   return (
     <Link href="/" className="flex items-center gap-2">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/logo" alt="Rose Annonce" className="h-7" style={{ filter: "drop-shadow(0 1px 1.5px rgba(21,41,30,0.25))" }} />
+      <span className="inline-flex items-center rounded-champ bg-foret-fonce px-3 py-2 shadow-sm">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo" alt="Rose Annonce" className="h-9" />
+      </span>
     </Link>
   );
 }

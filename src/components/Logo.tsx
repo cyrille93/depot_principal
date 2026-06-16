@@ -1,13 +1,9 @@
-// Logo Rose Annonce, posé directement sur l'en-tête clair (fond transparent).
-// Légère ombre portée pour garder la partie claire « Annonce » lisible sur fond blanc.
-export function Logo({ className = "h-8" }: { className?: string }) {
+// Logo Rose Annonce, posé sur une plaque vert forêt foncé (charte) pour bien ressortir.
+export function Logo({ className = "h-9" }: { className?: string }) {
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src="/logo"
-      alt="Rose Annonce"
-      className={className}
-      style={{ filter: "drop-shadow(0 1px 1.5px rgba(21,41,30,0.25))" }}
-    />
+    <span className="inline-flex items-center rounded-champ bg-foret-fonce px-3 py-2 shadow-sm">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/logo" alt="Rose Annonce" className={className} />
+    </span>
   );
 }

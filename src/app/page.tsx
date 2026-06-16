@@ -29,6 +29,7 @@ export default async function Home() {
   const vedettes = tous.slice(0, 6);
   const nonLus = session?.user ? await compterMessagesNonLus(session.user.id) : 0;
   const { taux, dureeMois } = await getParrainageConfig();
+  const gainExemple = Math.round((10000 * taux) / 100);
 
   const CATEGORIES = [
     { v: "RENCONTRE", label: "Rencontres", desc: "Escortes & rencontres", Icon: Heart, count: nbRencontre },
@@ -52,7 +53,7 @@ export default async function Home() {
       {/* Barre de navigation */}
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-bordure bg-carte/95 px-4 py-3 backdrop-blur md:px-10">
         <a href="/" className="flex items-center gap-2">
-          <Logo className="h-7" />
+          <Logo className="h-9" />
         </a>
         <div className="flex items-center gap-2">
           <a href="/explorer" className="hidden px-3 py-2 text-sm font-medium text-secondaire sm:block">
@@ -118,29 +119,28 @@ export default async function Home() {
           <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between md:p-7">
             <div className="flex-1">
               <span className="inline-flex items-center gap-1.5 rounded-pill bg-feuille-clair px-3 py-1 text-[11px] font-medium text-sur-vert">
-                <Gift className="h-3.5 w-3.5" /> Nouveau · Programme de parrainage
+                <Gift className="h-3.5 w-3.5" /> Gagnez de l'argent en parrainant
               </span>
               <h2 className="mt-3 text-xl font-medium leading-snug text-sur-foret md:text-2xl">
-                Ici, vous ne faites pas que <span className="text-sur-foret-mute line-through">dépenser</span>{" "}
-                — vous <span className="text-feuille-clair">gagnez de l'argent</span>.
+                Et si votre réseau vous <span className="text-feuille-clair">rapportait de l'argent</span> ?
               </h2>
               <p className="mt-2 max-w-xl text-sm leading-relaxed text-sur-foret-mute">
-                Les autres sites d'annonces ne font que vous facturer. {MARQUE_SEO} vous{" "}
-                <b className="text-sur-foret">reverse {taux}%</b> sur chaque recharge des personnes que vous
-                parrainez, pendant <b className="text-sur-foret">{dureeMois} mois</b>. Plus vous invitez, plus vous
-                encaissez — directement dans votre portefeuille.
+                Ailleurs, vous ne faites que <span className="text-sur-foret-mute line-through">payer</span>. Sur{" "}
+                {MARQUE_SEO}, chaque personne que vous invitez vous <b className="text-sur-foret">rapporte {taux}%</b> sur
+                toutes ses recharges, pendant <b className="text-sur-foret">{dureeMois} mois</b> — crédité tout seul sur
+                votre portefeuille.
               </p>
-              <div className="mt-3 flex flex-wrap gap-4 text-xs text-sur-foret-mute">
-                <span className="flex items-center gap-1.5"><Wallet className="h-4 w-4 text-feuille-clair" /> Crédité automatiquement</span>
-                <span className="flex items-center gap-1.5"><Gift className="h-4 w-4 text-feuille-clair" /> Code unique par compte</span>
+              <div className="mt-3 inline-flex items-center gap-2 rounded-champ bg-foret-fonce px-3 py-2 text-xs text-sur-foret">
+                <Wallet className="h-4 w-4 text-feuille-clair" />
+                <span>Exemple : un filleul recharge <b>10 000 F</b> → vous gagnez <b className="text-feuille-clair">{gainExemple.toLocaleString("fr-FR")} F</b>, sans rien faire.</span>
               </div>
             </div>
             <div className="flex shrink-0 flex-col gap-2 md:w-48">
               <a href="/compte" className="rounded-champ bg-feuille px-5 py-3 text-center text-sm font-medium text-sur-vert">
-                Obtenir mon code
+                Gagner avec mon code
               </a>
               <a href="/inscription" className="rounded-champ border border-feuille-clair px-5 py-3 text-center text-sm font-medium text-sur-foret">
-                Créer un compte
+                Je m'inscris gratuitement
               </a>
             </div>
           </div>
