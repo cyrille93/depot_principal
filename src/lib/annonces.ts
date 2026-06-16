@@ -112,34 +112,39 @@ export async function listerAnnonces(filtres?: FiltresAnnonces, userId?: string)
     ];
   }
 
-  // Tri : par note, par disponibilité, ou pertinence (défaut)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let orderBy: any[];
-  if (filtres?.tri === "note") {
-    orderBy = [
-      { user: { profil: { noteMoyenne: "desc" } } },
-      { estBoostee: "desc" },
-      { createdAt: "desc" },
-    ];
-  } else if (filtres?.tri === "dispo") {
-    orderBy = [
-      { user: { profil: { disponible: "desc" } } },
-      { estBoostee: "desc" },
-      { user: { profil: { scoreReputation: "desc" } } },
-    ];
-  } else {
-    orderBy = [
-      { estBoostee: "desc" },
-      { user: { profil: { scoreReputation: "desc" } } },
-      { createdAt: "desc" },
-    ];
-  }
-
   const annonces = await db.annonce.findMany({
     where,
     include: { ville: true, user: { include: { profil: true } }, medias: { select: { url: true, ordre: true } } },
-    orderBy,
   });
+
+  const now = Date.now();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const meta = (a: any) => {
+    const boostActif = !!a.boostExpire && new Date(a.boostExpire).getTime() > now && a.miseEnAvant !== "STANDARD";
+    return {
+      montant: boostActif ? a.boostMontant ?? 0 : 0, // 0 = annonce non monétisée
+      note: a.user?.profil?.noteMoyenne ?? 0,
+      score: a.user?.profil?.scoreReputation ?? 0,
+      dispo: a.user?.profil?.disponible === false ? 0 : 1,
+      created: new Date(a.createdAt).getTime(),
+    };
+  };
+
+  const tri = filtres?.tri;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  annonces.sort((a: any, b: any) => {
+    const ma = meta(a);
+    const mb = meta(b);
+    // 1) Monétisées toujours avant les non monétisées ; plus le boost payé est élevé, plus l'annonce est haute
+    if (mb.montant !== ma.montant) return mb.montant - ma.montant;
+    // 2) Tri secondaire choisi (s'applique surtout aux non monétisées, ou à montant égal)
+    if (tri === "note" && mb.note !== ma.note) return mb.note - ma.note;
+    if (tri === "dispo" && mb.dispo !== ma.dispo) return mb.dispo - ma.dispo;
+    if (tri !== "note" && tri !== "dispo" && mb.score !== ma.score) return mb.score - ma.score;
+    // 3) La plus récente d'abord
+    return mb.created - ma.created;
+  });
+
   const cartes = annonces.map(versCarte);
   return marquerFavoris(cartes, userId);
 }

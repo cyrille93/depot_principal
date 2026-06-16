@@ -49,7 +49,7 @@ export async function acheterMiseEnAvant(
       });
       await tx.annonce.update({
         where: { id: annonceId },
-        data: { miseEnAvant: niveau, estBoostee: true, boostDebut: debut, boostExpire: expire },
+        data: { miseEnAvant: niveau, estBoostee: true, boostDebut: debut, boostExpire: expire, boostMontant: cout },
       });
     }
   );

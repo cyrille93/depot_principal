@@ -43,14 +43,14 @@ export async function creerAnnonce(
     create: { userId: session.user.id, pseudo, villeId },
   });
 
-  // Annonce créée EN_ATTENTE : elle passe par la modération avant d'être visible
+  // L'annonce est publiée directement (modération a posteriori via signalements/admin)
   await db.annonce.create({
     data: {
       titre,
       description,
       categorie: categorie as Cat,
       prix: Math.round(prix),
-      statut: "EN_ATTENTE",
+      statut: "ACTIVE",
       userId: session.user.id,
       villeId,
       medias: {

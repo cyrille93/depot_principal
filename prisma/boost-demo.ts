@@ -15,9 +15,13 @@ const ATTRIBUTIONS: { email: string; niveau: "URGENT" | "VIP" | "TOP" | "PREMIUM
   { email: "sonia@demo.cm", niveau: "URGENT" },
 ];
 
+// Montant (FCFA) associé à chaque niveau pour le classement par prix de boost
+const MONTANT: Record<string, number> = { URGENT: 1000, TOP: 1500, VIP: 2000, PREMIUM: 3000 };
+
 async function main() {
   const expire = new Date();
   expire.setDate(expire.getDate() + 4);
+  const debut = new Date();
 
   let n = 0;
   for (const a of ATTRIBUTIONS) {
@@ -25,7 +29,7 @@ async function main() {
     if (!user) continue;
     const res = await db.annonce.updateMany({
       where: { userId: user.id },
-      data: { miseEnAvant: a.niveau, estBoostee: true, boostExpire: expire },
+      data: { miseEnAvant: a.niveau, estBoostee: true, boostDebut: debut, boostExpire: expire, boostMontant: MONTANT[a.niveau] ?? 1000 },
     });
     n += res.count;
   }
