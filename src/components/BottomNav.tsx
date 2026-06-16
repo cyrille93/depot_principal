@@ -14,7 +14,7 @@ export function BottomNav() {
   const actif = (href: string) => pathname === href;
   const cls = (href: string) =>
     "flex flex-1 flex-col items-center gap-0.5 py-1 text-[10px] " +
-    (actif(href) ? "text-action-verte" : "text-tertiaire");
+    (actif(href) ? "text-feuille" : "text-tertiaire");
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 flex items-end justify-around border-t border-bordure bg-carte px-2 pb-[calc(env(safe-area-inset-bottom)+6px)] pt-1.5 md:hidden">

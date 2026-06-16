@@ -43,10 +43,6 @@ export function ProfilCard({ profil }: { profil: ProfilFictif }) {
           </div>
         )}
 
-        {profil.enLigne && (
-          <span className="absolute bottom-2 left-2 h-2.5 w-2.5 rounded-pill border-2 border-media bg-feuille-clair" />
-        )}
-
         {profil.badge === "Urgent" && (
           <span className="absolute left-2 top-2 rounded-pill bg-etoile px-2 py-0.5 text-[11px] font-medium text-sur-vert">
             Urgent
@@ -99,7 +95,7 @@ export function ProfilCard({ profil }: { profil: ProfilFictif }) {
 
         <div className="mt-1 flex items-center gap-1 text-xs text-secondaire">
           <MapPin className="h-3.5 w-3.5 text-action-verte" strokeWidth={1.75} />
-          <span>{profil.ville} · {profil.distanceKm} km</span>
+          <span>{profil.ville}</span>
         </div>
 
         <div className="mt-3 flex items-center justify-between">

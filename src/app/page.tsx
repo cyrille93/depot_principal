@@ -10,7 +10,7 @@ import { Logo } from "@/components/Logo";
 import { JsonLd } from "@/components/JsonLd";
 import { MARQUE_SEO, SITE_URL } from "@/lib/seo";
 import { getParrainageConfig } from "@/lib/parametres";
-import { Heart, Sparkles, Flower2, ShoppingBag, MapPin, ChevronRight, MessageSquare, Wallet, Gift } from "lucide-react";
+import { Heart, Sparkles, Flower2, ShoppingBag, MessageSquare, Wallet, Gift } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -29,12 +29,6 @@ export default async function Home() {
   const vedettes = tous.slice(0, 6);
   const nonLus = session?.user ? await compterMessagesNonLus(session.user.id) : 0;
   const { taux, dureeMois } = await getParrainageConfig();
-
-  // Villes les plus actives (depuis la liste déjà chargée)
-  const idParVille = new Map(villes.map((v: { id: string; nom: string }) => [v.nom, v.id]));
-  const compteVilles = new Map<string, number>();
-  for (const a of tous) compteVilles.set(a.ville, (compteVilles.get(a.ville) ?? 0) + 1);
-  const topVilles = [...compteVilles.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4);
 
   const CATEGORIES = [
     { v: "RENCONTRE", label: "Rencontres", desc: "Escortes & rencontres", Icon: Heart, count: nbRencontre },
@@ -150,51 +144,6 @@ export default async function Home() {
               </a>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Le N°1 — villes & catégories */}
-      <section className="mx-3 mt-6 md:mx-10">
-        <h2 className="text-xl text-principal md:text-2xl">
-          Le <span className="font-medium text-feuille">N°1</span> des annonces de rencontres &amp; services au Cameroun
-        </h2>
-
-        {/* Villes */}
-        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-bordure pb-4">
-          {topVilles.map(([nom, n]) => (
-            <a key={nom} href={idParVille.get(nom) ? `/explorer?ville=${idParVille.get(nom)}` : "/explorer"} className="flex items-center gap-1.5">
-              <MapPin className="h-4 w-4 text-action-verte" strokeWidth={1.75} />
-              <span className="text-sm font-medium text-principal">{nom}</span>
-              <span className="text-xs text-tertiaire">({n.toLocaleString("fr-FR")})</span>
-            </a>
-          ))}
-          <a href="/explorer" className="flex items-center gap-1 text-sm font-medium text-action-verte">
-            Plus de villes <ChevronRight className="h-4 w-4" />
-          </a>
-        </div>
-
-        {/* Catégories */}
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {CATEGORIES.map((c) => (
-            <a
-              key={c.v}
-              href={`/explorer?service=${c.v}`}
-              className="group flex items-start gap-3 rounded-carte border border-bordure bg-carte p-4 transition-colors hover:border-bordure-forte"
-            >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill bg-tint-succes text-texte-succes">
-                <c.Icon className="h-5 w-5" strokeWidth={1.75} />
-              </span>
-              <div className="min-w-0">
-                <div className="text-sm font-medium text-principal">{c.label}</div>
-                <div className="text-[11px] text-secondaire">
-                  {c.count.toLocaleString("fr-FR")} annonce{c.count > 1 ? "s" : ""}
-                </div>
-                <div className="mt-1 flex items-center gap-1 text-xs text-action-verte">
-                  {c.desc} <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                </div>
-              </div>
-            </a>
-          ))}
         </div>
       </section>
 

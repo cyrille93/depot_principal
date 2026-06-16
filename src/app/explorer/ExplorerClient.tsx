@@ -4,8 +4,6 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  Search,
-  ShieldCheck,
   SlidersHorizontal,
   Heart,
   MessageCircle,
@@ -20,10 +18,8 @@ import { NotificationsBell } from "@/components/NotificationsBell";
 function Logo() {
   return (
     <Link href="/" className="flex items-center gap-2">
-      <span className="inline-flex items-center rounded-petit bg-foret-fonce px-2.5 py-1.5">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo" alt="Rose Annonce" className="h-7" />
-      </span>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/logo" alt="Rose Annonce" className="h-7" style={{ filter: "drop-shadow(0 1px 1.5px rgba(21,41,30,0.25))" }} />
     </Link>
   );
 }
@@ -115,10 +111,7 @@ export function ExplorerClient({ profils, tri }: { profils: ProfilFictif[]; tri:
     <div className="min-h-screen pb-24 md:pb-0">
       <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-bordure bg-carte px-4 py-3 md:px-8">
         <Logo />
-        <div className="flex min-w-0 flex-1 items-center gap-2 rounded-champ border border-bordure bg-page px-3 py-2 text-tertiaire">
-          <Search className="h-[18px] w-[18px] shrink-0" />
-          <span className="truncate text-sm">Rechercher à Douala…</span>
-        </div>
+        <div className="flex-1" />
         <NotificationsBell />
         <Link href="/messages" aria-label="Messages" className="hidden text-action-verte md:block">
           <MessageCircle className="h-5 w-5" />
@@ -130,17 +123,7 @@ export function ExplorerClient({ profils, tri }: { profils: ProfilFictif[]; tri:
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">Publier</span>
         </Link>
-        <span className="hidden h-8 w-8 items-center justify-center rounded-pill bg-foret text-xs font-medium text-tint-succes md:flex">
-          SK
-        </span>
       </header>
-
-      <div className="flex items-center gap-2 bg-tint-succes-2 px-4 py-2.5 md:px-8">
-        <ShieldCheck className="h-[18px] w-[18px] shrink-0 text-action-verte" />
-        <span className="text-xs text-texte-succes">
-          Identité vérifiée par selfie · avis réels après prestation · paiement Mobile Money
-        </span>
-      </div>
 
       <div className="flex items-start gap-6 px-4 py-5 md:px-8">
         <aside className="hidden w-44 shrink-0 rounded-carte border border-bordure bg-carte p-4 md:block">
