@@ -52,7 +52,7 @@ export default async function ComptePage() {
   const mesAnnonces = annonces as AnnonceRow[];
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-6">
+    <main className="mx-auto max-w-2xl px-4 py-6 pb-24 md:pb-6">
       {/* En-tête */}
       <section className="rounded-carte bg-foret p-5 text-sur-foret">
         <div className="flex items-center gap-3">

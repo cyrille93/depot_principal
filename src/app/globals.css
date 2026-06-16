@@ -71,3 +71,7 @@ h1, h2, h3, h4, .titre {
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 .toast-in { animation: toast-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1); }
+
+/* Masque la barre de défilement (chips, onglets horizontaux) */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

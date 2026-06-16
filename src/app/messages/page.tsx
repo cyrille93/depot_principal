@@ -22,7 +22,7 @@ export default async function MessagesPage() {
   const convs = await listerConversations(session.user.id);
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-5">
+    <main className="mx-auto max-w-2xl px-4 py-5 pb-24 md:pb-5">
       <div className="mb-4 flex items-center gap-1">
         <Link href="/compte" className="flex items-center gap-1 text-sm text-secondaire">
           <ChevronLeft className="h-5 w-5" /> Mon compte

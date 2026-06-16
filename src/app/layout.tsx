@@ -3,6 +3,7 @@ import "./globals.css";
 import { ToastProvider } from "@/components/Toast";
 import { AgeGate } from "@/components/AgeGate";
 import { Presence } from "@/components/Presence";
+import { BottomNav } from "@/components/BottomNav";
 
 export const metadata: Metadata = {
   title: "Rose Annonce — annonces vérifiées au Cameroun",
@@ -29,6 +30,7 @@ export default function RootLayout({
         <AgeGate />
         <Presence />
         <ToastProvider>{children}</ToastProvider>
+        <BottomNav />
       </body>
     </html>
   );

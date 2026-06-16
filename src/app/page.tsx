@@ -44,7 +44,7 @@ export default async function Home() {
   ];
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen pb-24 md:pb-0">
       <JsonLd
         data={{
           "@context": "https://schema.org",
@@ -56,7 +56,7 @@ export default async function Home() {
         }}
       />
       {/* Barre de navigation */}
-      <header className="flex items-center justify-between border-b border-bordure bg-carte px-4 py-3 md:px-10">
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-bordure bg-carte/95 px-4 py-3 backdrop-blur md:px-10">
         <a href="/" className="flex items-center gap-2">
           <Logo className="h-7" />
         </a>
@@ -99,6 +99,24 @@ export default async function Home() {
 
       {/* Bandeau : compteur + recherche + bascules */}
       <RechercheHome villes={villes} count={tous.length} />
+
+      {/* Chips catégories (défilables) */}
+      <section className="mt-4 px-3 md:px-10">
+        <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
+          <a href="/explorer" className="shrink-0 rounded-pill bg-feuille px-4 py-2 text-xs font-medium text-sur-vert">
+            Tous
+          </a>
+          {CATEGORIES.map((c) => (
+            <a
+              key={c.v}
+              href={`/explorer?service=${c.v}`}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-pill bg-pill-fond px-4 py-2 text-xs font-medium text-pill-texte"
+            >
+              <c.Icon className="h-3.5 w-3.5" /> {c.label}
+            </a>
+          ))}
+        </div>
+      </section>
 
       {/* Bannière : gagner de l'argent grâce au parrainage */}
       <section className="mx-3 mt-6 md:mx-10">

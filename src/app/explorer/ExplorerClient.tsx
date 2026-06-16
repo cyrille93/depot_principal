@@ -112,7 +112,7 @@ export function ExplorerClient({ profils, tri }: { profils: ProfilFictif[]; tri:
   );
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-24 md:pb-0">
       <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-bordure bg-carte px-4 py-3 md:px-8">
         <Logo />
         <div className="flex min-w-0 flex-1 items-center gap-2 rounded-champ border border-bordure bg-page px-3 py-2 text-tertiaire">
