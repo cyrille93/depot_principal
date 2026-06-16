@@ -9,7 +9,8 @@ import { NotificationsBell } from "@/components/NotificationsBell";
 import { Logo } from "@/components/Logo";
 import { JsonLd } from "@/components/JsonLd";
 import { MARQUE_SEO, SITE_URL } from "@/lib/seo";
-import { Heart, Sparkles, Flower2, ShoppingBag, MapPin, ChevronRight, MessageSquare } from "lucide-react";
+import { getParrainageConfig } from "@/lib/parametres";
+import { Heart, Sparkles, Flower2, ShoppingBag, MapPin, ChevronRight, MessageSquare, Wallet, Gift } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,7 @@ export default async function Home() {
 
   const vedettes = tous.slice(0, 6);
   const nonLus = session?.user ? await compterMessagesNonLus(session.user.id) : 0;
+  const { taux, dureeMois } = await getParrainageConfig();
 
   // Villes les plus actives (depuis la liste déjà chargée)
   const idParVille = new Map(villes.map((v: { id: string; nom: string }) => [v.nom, v.id]));
@@ -97,6 +99,41 @@ export default async function Home() {
 
       {/* Bandeau : compteur + recherche + bascules */}
       <RechercheHome villes={villes} count={tous.length} />
+
+      {/* Bannière : gagner de l'argent grâce au parrainage */}
+      <section className="mx-3 mt-6 md:mx-10">
+        <div className="overflow-hidden rounded-carte bg-foret">
+          <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between md:p-7">
+            <div className="flex-1">
+              <span className="inline-flex items-center gap-1.5 rounded-pill bg-feuille-clair px-3 py-1 text-[11px] font-medium text-sur-vert">
+                <Gift className="h-3.5 w-3.5" /> Nouveau · Programme de parrainage
+              </span>
+              <h2 className="mt-3 text-xl font-medium leading-snug text-sur-foret md:text-2xl">
+                Ici, vous ne faites pas que <span className="text-sur-foret-mute line-through">dépenser</span>{" "}
+                — vous <span className="text-feuille-clair">gagnez de l'argent</span>.
+              </h2>
+              <p className="mt-2 max-w-xl text-sm leading-relaxed text-sur-foret-mute">
+                Les autres sites d'annonces ne font que vous facturer. {MARQUE_SEO} vous{" "}
+                <b className="text-sur-foret">reverse {taux}%</b> sur chaque recharge des personnes que vous
+                parrainez, pendant <b className="text-sur-foret">{dureeMois} mois</b>. Plus vous invitez, plus vous
+                encaissez — directement dans votre portefeuille.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-4 text-xs text-sur-foret-mute">
+                <span className="flex items-center gap-1.5"><Wallet className="h-4 w-4 text-feuille-clair" /> Crédité automatiquement</span>
+                <span className="flex items-center gap-1.5"><Gift className="h-4 w-4 text-feuille-clair" /> Code unique par compte</span>
+              </div>
+            </div>
+            <div className="flex shrink-0 flex-col gap-2 md:w-48">
+              <a href="/compte" className="rounded-champ bg-feuille px-5 py-3 text-center text-sm font-medium text-sur-vert">
+                Obtenir mon code
+              </a>
+              <a href="/inscription" className="rounded-champ border border-feuille-clair px-5 py-3 text-center text-sm font-medium text-sur-foret">
+                Créer un compte
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Le N°1 — villes & catégories */}
       <section className="mx-3 mt-6 md:mx-10">
