@@ -1,0 +1,511 @@
+// Schéma Confiance — fondation multi-pays + modèle complet.
+// Le pays est une dimension de première classe : on lance le Cameroun,
+// on étend ensuite (Côte d'Ivoire, Sénégal...) sans réécrire le modèle.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // PostGIS sera activé au moment de la géolocalisation (Phase 3).
+}
+
+// ----- ÉNUMÉRATIONS -----
+
+enum Role {
+  CLIENT
+  PRO
+  ADMIN
+}
+
+enum StatutCompte {
+  ACTIF
+  SUSPENDU
+  SUPPRIME
+}
+
+enum CategorieAnnonce {
+  RENCONTRE
+  MASSAGE
+  SPA
+  PRODUITS
+}
+
+enum StatutAnnonce {
+  BROUILLON
+  EN_ATTENTE
+  ACTIVE
+  SUSPENDUE
+  REFUSEE
+  SUPPRIMEE
+}
+
+enum NiveauMiseEnAvant {
+  STANDARD
+  URGENT
+  VIP
+  TOP
+  PREMIUM
+}
+
+enum TypeMedia {
+  PHOTO
+}
+
+enum TypeVerification {
+  TELEPHONE
+  IDENTITE
+  SELFIE
+}
+
+enum StatutVerification {
+  EN_ATTENTE
+  VALIDE
+  REFUSE
+}
+
+enum TypeMouvement {
+  RECHARGE
+  COMMISSION
+  BONUS
+  ACHAT_PREMIUM
+  TRANSFERT_ENVOYE
+  TRANSFERT_RECU
+}
+
+enum OperateurPaiement {
+  ORANGE_MONEY
+  MTN_MOMO
+}
+
+enum StatutRecharge {
+  EN_ATTENTE
+  CONFIRMEE
+  ECHEC
+}
+
+enum StatutParrainage {
+  ACTIF
+  SUSPENDU
+  EXPIRE
+}
+
+enum StatutCommission {
+  EN_ATTENTE
+  VERSEE
+  PERDUE
+}
+
+enum TypeOptionPremium {
+  MISE_EN_AVANT
+  SPONSORISEE
+  BADGE_PREMIUM
+  GALERIE_ETENDUE
+}
+
+enum CibleSignalement {
+  PROFIL
+  ANNONCE
+  MESSAGE
+}
+
+enum MotifSignalement {
+  FAUX_PROFIL
+  CONTENU_INAPPROPRIE
+  HARCELEMENT
+  ARNAQUE
+}
+
+enum StatutSignalement {
+  OUVERT
+  TRAITE
+  REJETE
+}
+
+// ----- RÉFÉRENTIEL GÉO -----
+
+model Pays {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  nom          String
+  devise       String
+  locale       String   @default("fr")
+  indicatifTel String
+  actif        Boolean  @default(true)
+  villes       Ville[]
+  users        User[]
+  createdAt    DateTime @default(now())
+}
+
+model Ville {
+  id        String    @id @default(cuid())
+  nom       String
+  slug      String
+  region    String?
+  latitude  Float?
+  longitude Float?
+  actif     Boolean   @default(true)
+  pays      Pays      @relation(fields: [paysId], references: [id])
+  paysId    String
+  profils   Profil[]
+  annonces  Annonce[]
+  createdAt DateTime  @default(now())
+
+  @@unique([paysId, slug])
+  @@index([paysId])
+}
+
+// ----- COMPTES -----
+
+model User {
+  id                 String       @id @default(cuid())
+  email              String?      @unique
+  telephone          String?      @unique
+  motDePasseHash     String?
+  role               Role         @default(CLIENT)
+  statut             StatutCompte @default(ACTIF)
+  niveauVerification Int          @default(0)
+  telephoneVerifie   Boolean      @default(false)
+  emailVerifie       Boolean      @default(false)
+  identiteVerifiee   Boolean      @default(false)
+  selfieVerifie      Boolean      @default(false)
+  locale             String       @default("fr")
+  codeParrainage     String       @unique
+  derniereActivite   DateTime?
+  pays               Pays         @relation(fields: [paysId], references: [id])
+  paysId             String
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  profil             Profil?
+  annonces           Annonce[]
+  avisEcrits         Avis[]
+  portefeuille       Portefeuille?
+  recharges          Recharge[]
+  verifications      Verification[]
+  signalements       Signalement[]
+  favoris            Favori[]
+  optionsPremium     OptionPremium[]
+  parrainagesEnvoyes Parrainage[]       @relation("Parrain")
+  parrainageRecu     Parrainage?        @relation("Filleul")
+  transfertsEnvoyes  TransfertInterne[] @relation("Emetteur")
+  transfertsRecus    TransfertInterne[] @relation("Destinataire")
+  conversationsA     Conversation[]     @relation("ConvA")
+  conversationsB     Conversation[]     @relation("ConvB")
+  messages           Message[]
+  blocagesEmis       Blocage[]          @relation("Bloqueur")
+  blocagesRecus      Blocage[]          @relation("Bloque")
+  notifications      Notification[]
+
+  @@index([paysId])
+}
+
+model Profil {
+  id              String   @id @default(cuid())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String   @unique
+  pseudo          String
+  description     String?
+  photoUrl        String?
+  ville           Ville?   @relation(fields: [villeId], references: [id])
+  villeId         String?
+  // Réputation dénormalisée (recalculée par job, Phase 4)
+  noteMoyenne     Float    @default(0)
+  nombreAvis      Int      @default(0)
+  tauxReponse     Int      @default(0)
+  scoreReputation Float    @default(0)
+  disponible      Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([villeId])
+}
+
+// ----- ANNONCES & MÉDIAS -----
+
+model Annonce {
+  id          String           @id @default(cuid())
+  titre       String
+  description String
+  categorie   CategorieAnnonce
+  prix        Int // FCFA
+  statut      StatutAnnonce    @default(EN_ATTENTE)
+  estBoostee  Boolean          @default(false)
+  boostDebut  DateTime?
+  boostExpire DateTime?
+  miseEnAvant NiveauMiseEnAvant @default(STANDARD)
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  ville       Ville            @relation(fields: [villeId], references: [id])
+  villeId     String
+  medias      Media[]
+  avis        Avis[]
+  favoris     Favori[]
+  options     OptionPremium[]
+  conversations Conversation[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([userId])
+  @@index([villeId])
+  @@index([categorie])
+  @@index([statut])
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  // Paire normalisée : userAId < userBId
+  userA     User      @relation("ConvA", fields: [userAId], references: [id], onDelete: Cascade)
+  userAId   String
+  userB     User      @relation("ConvB", fields: [userBId], references: [id], onDelete: Cascade)
+  userBId   String
+  annonce   Annonce?  @relation(fields: [annonceId], references: [id])
+  annonceId String?
+  messages  Message[]
+  dernierAt DateTime  @default(now())
+  createdAt DateTime  @default(now())
+
+  @@unique([userAId, userBId, annonceId])
+  @@index([userAId])
+  @@index([userBId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversationId String
+  expediteur     User         @relation(fields: [expediteurId], references: [id])
+  expediteurId   String
+  contenu        String?
+  imageUrl       String?
+  lu             Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
+}
+
+model Media {
+  id             String    @id @default(cuid())
+  annonce        Annonce   @relation(fields: [annonceId], references: [id], onDelete: Cascade)
+  annonceId      String
+  type           TypeMedia @default(PHOTO)
+  url            String
+  floutee        Boolean   @default(false)
+  visagesFloutes Int       @default(0)
+  ordre          Int       @default(0)
+  createdAt      DateTime  @default(now())
+
+  @@index([annonceId])
+}
+
+model Avis {
+  id                     String   @id @default(cuid())
+  annonce                Annonce  @relation(fields: [annonceId], references: [id], onDelete: Cascade)
+  annonceId              String
+  auteur                 User     @relation(fields: [auteurId], references: [id])
+  auteurId               String
+  note                   Int
+  noteQualite            Int?
+  notePonctualite        Int?
+  noteAccueil            Int?
+  noteRapportQualitePrix Int?
+  noteSatisfaction       Int?
+  commentaire            String?
+  createdAt              DateTime @default(now())
+
+  @@unique([annonceId, auteurId])
+  @@index([annonceId])
+}
+
+model Favori {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  annonce   Annonce  @relation(fields: [annonceId], references: [id], onDelete: Cascade)
+  annonceId String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, annonceId])
+}
+
+// ----- VÉRIFICATION (KYC / 18+) -----
+
+model Verification {
+  id          String             @id @default(cuid())
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  type        TypeVerification
+  statut      StatutVerification @default(EN_ATTENTE)
+  documentUrl String?
+  createdAt   DateTime           @default(now())
+
+  @@index([userId])
+}
+
+// ----- PORTEFEUILLE & FLUX D'ARGENT -----
+
+model Portefeuille {
+  id        String                 @id @default(cuid())
+  user      User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String                 @unique
+  solde     Int                    @default(0) // FCFA
+  mouvements MouvementPortefeuille[]
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @updatedAt
+}
+
+model MouvementPortefeuille {
+  id             String        @id @default(cuid())
+  portefeuille   Portefeuille  @relation(fields: [portefeuilleId], references: [id], onDelete: Cascade)
+  portefeuilleId String
+  type           TypeMouvement
+  montant        Int // signé : crédit positif, débit négatif
+  libelle        String
+  refExterne     String?
+  createdAt      DateTime      @default(now())
+
+  @@index([portefeuilleId])
+}
+
+model Recharge {
+  id          String            @id @default(cuid())
+  user        User              @relation(fields: [userId], references: [id])
+  userId      String
+  montant     Int
+  operateur   OperateurPaiement
+  statut      StatutRecharge    @default(EN_ATTENTE)
+  refOperateur String?
+  commissions Commission[]
+  createdAt   DateTime          @default(now())
+
+  @@index([userId])
+}
+
+model TransfertInterne {
+  id             String   @id @default(cuid())
+  emetteur       User     @relation("Emetteur", fields: [emetteurId], references: [id])
+  emetteurId     String
+  destinataire   User     @relation("Destinataire", fields: [destinataireId], references: [id])
+  destinataireId String
+  montant        Int
+  createdAt      DateTime @default(now())
+
+  @@index([emetteurId])
+  @@index([destinataireId])
+}
+
+// ----- PARRAINAGE -----
+
+model Parrainage {
+  id          String           @id @default(cuid())
+  parrain     User             @relation("Parrain", fields: [parrainId], references: [id])
+  parrainId   String
+  filleul     User             @relation("Filleul", fields: [filleulId], references: [id])
+  filleulId   String           @unique
+  codeUtilise String
+  dateDebut   DateTime         @default(now())
+  dateFin     DateTime
+  statut      StatutParrainage @default(ACTIF)
+  commissions Commission[]
+  createdAt   DateTime         @default(now())
+
+  @@index([parrainId])
+}
+
+model Commission {
+  id           String           @id @default(cuid())
+  parrainage   Parrainage       @relation(fields: [parrainageId], references: [id], onDelete: Cascade)
+  parrainageId String
+  recharge     Recharge         @relation(fields: [rechargeId], references: [id])
+  rechargeId   String
+  montant      Int
+  moisRef      String // ex: "2026-06" pour la règle d'activité mensuelle
+  statut       StatutCommission @default(EN_ATTENTE)
+  createdAt    DateTime         @default(now())
+
+  @@index([parrainageId])
+}
+
+// ----- PREMIUM -----
+
+model OptionPremium {
+  id          String            @id @default(cuid())
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  annonce     Annonce?          @relation(fields: [annonceId], references: [id])
+  annonceId   String?
+  type        TypeOptionPremium
+  montant     Int
+  dateDebut   DateTime          @default(now())
+  dateExpire  DateTime
+  createdAt   DateTime          @default(now())
+
+  @@index([userId])
+}
+
+// ----- SIGNALEMENTS -----
+
+model Signalement {
+  id        String            @id @default(cuid())
+  auteur    User              @relation(fields: [auteurId], references: [id])
+  auteurId  String
+  cibleType CibleSignalement
+  cibleId   String
+  motif     MotifSignalement
+  statut    StatutSignalement @default(OUVERT)
+  createdAt DateTime          @default(now())
+
+  @@index([statut])
+}
+
+model Blocage {
+  id         String   @id @default(cuid())
+  bloqueur   User     @relation("Bloqueur", fields: [bloqueurId], references: [id], onDelete: Cascade)
+  bloqueurId String
+  bloque     User     @relation("Bloque", fields: [bloqueId], references: [id], onDelete: Cascade)
+  bloqueId   String
+  createdAt  DateTime @default(now())
+
+  @@unique([bloqueurId, bloqueId])
+  @@index([bloqueId])
+}
+
+enum TypeNotification {
+  MESSAGE
+  AVIS
+  ANNONCE_VALIDEE
+  ANNONCE_REFUSEE
+  VERIFICATION
+  COMMISSION
+  SYSTEME
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  type      TypeNotification
+  titre     String
+  message   String
+  lien      String?
+  lu        Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, lu])
+}
+
+// Contenu éditable des pages légales (modifiable depuis l'admin)
+model ContenuPage {
+  cle       String   @id // "cgu" | "confidentialite" | "mentions-legales"
+  titre     String
+  corps     String
+  updatedAt DateTime @updatedAt
+}
+
+// Paramètres globaux modifiables depuis l'admin (clé/valeur)
+model Parametre {
+  cle    String @id // "parrainage_taux" | "parrainage_duree_mois" | "logo"
+  valeur String
+}

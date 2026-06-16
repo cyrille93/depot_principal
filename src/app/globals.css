@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* ----- MARQUE ----- */
+  --vert-foret:        #173A28;
+  --vert-foret-fonce:  #0F2A1C;
+  --vert-feuille:      #1EA85B;
+  --vert-feuille-clair:#25B968;
+  --sur-vert:          #0B2A18;
+
+  /* ----- SURFACES ----- */
+  --fond-page:         #DCE7DA;
+  --fond-media:        #E7EDE3;
+  --surface-carte:     #FFFFFF;
+  --surface-neutre:    #EDEBE4;
+
+  /* ----- ÉTATS & ACCENTS ----- */
+  --tint-succes:       #DBF0E3;
+  --tint-succes-2:     #CFE9D8;
+  --texte-succes:      #0B5A45;
+  --action-verte:      #0E7A52;
+  --etoile:            #E0A024;
+  --vip:               #C2871F;
+
+  /* ----- TEXTE ----- */
+  --texte-principal:   #15291E;
+  --texte-secondaire:  #5A6E60;
+  --texte-tertiaire:   #7C8C81;
+  --texte-sur-foret:   #EAF2E8;
+  --texte-sur-foret-mute: #A9C0B0;
+
+  /* ----- BORDURES ----- */
+  --bordure:           #E2EADF;
+  --bordure-forte:     #DCE3D7;
+
+  /* ----- PILL NEUTRE ----- */
+  --pill-neutre-fond:  #EEF3EB;
+  --pill-neutre-texte: #3C5246;
+
+  /* ----- TYPOGRAPHIE ----- */
+  --police: "Inter", system-ui, -apple-system, sans-serif;
+
+  /* ----- RAYONS ----- */
+  --rayon-pill:   999px;
+  --rayon-carte:  16px;
+  --rayon-champ:  10px;
+  --rayon-petit:  8px;
+}
+
+html, body {
+  padding: 0;
+  margin: 0;
+  background: var(--fond-page);
+  color: var(--texte-principal);
+  font-family: var(--police);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, .titre {
+  font-weight: 500;
+}
+
+* { box-sizing: border-box; }
+
+/* ----- Notifications (toasts) ----- */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.toast-in { animation: toast-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1); }
