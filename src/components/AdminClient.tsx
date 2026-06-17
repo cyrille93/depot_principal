@@ -19,6 +19,7 @@ import {
   Ban,
 } from "lucide-react";
 import { ContenuEditor } from "@/components/ContenuEditor";
+import { Logo } from "@/components/Logo";
 import { useToast } from "@/components/Toast";
 
 const NAV = [
@@ -331,8 +332,7 @@ export function AdminClient({
     <div className="flex min-h-screen">
       <aside className="hidden w-56 shrink-0 flex-col bg-foret p-4 md:flex">
         <div className="mb-6 flex items-center px-2">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo" alt="Rose Annonce" className="h-8" />
+          <Logo className="h-8" />
         </div>
         <nav className="space-y-1">
           {NAV.map((n) => (

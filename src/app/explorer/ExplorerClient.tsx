@@ -14,17 +14,7 @@ import {
 import { CATEGORIES, type ProfilFictif } from "@/lib/mock";
 import { ProfilCard } from "@/components/ProfilCard";
 import { NotificationsBell } from "@/components/NotificationsBell";
-
-function Logo() {
-  return (
-    <Link href="/" className="flex items-center gap-2">
-      <span className="inline-flex items-center rounded-champ bg-foret-fonce px-3 py-2 shadow-sm">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo" alt="Rose Annonce" className="h-9" />
-      </span>
-    </Link>
-  );
-}
+import { Logo } from "@/components/Logo";
 
 function Filtres({ cats, toggleCat }: { cats: Set<string>; toggleCat: (c: string) => void }) {
   return (
@@ -112,7 +102,7 @@ export function ExplorerClient({ profils, tri }: { profils: ProfilFictif[]; tri:
   return (
     <div className="min-h-screen pb-24 md:pb-0">
       <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-bordure bg-carte px-4 py-3 md:px-8">
-        <Logo />
+        <Link href="/" aria-label="Accueil"><Logo /></Link>
         <div className="flex-1" />
         <NotificationsBell />
         <Link href="/messages" aria-label="Messages" className="hidden text-action-verte md:block">
