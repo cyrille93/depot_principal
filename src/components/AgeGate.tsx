@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Logo } from "@/components/Logo";
 
 const CLE = "rose_annonce_majeur";
 
@@ -33,38 +34,48 @@ export function AgeGate() {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-foret-fonce/95 p-4">
-      <div className="w-full max-w-sm rounded-carte bg-carte p-6 text-center">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-pill bg-tint-succes text-texte-succes">
-          <span className="text-lg font-medium">18+</span>
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-6 text-center"
+      style={{ background: "radial-gradient(120% 80% at 50% 0%, #173A28 0%, #0F2A1C 60%, #0B2A18 100%)" }}
+    >
+      <div className="flex w-full max-w-sm flex-col items-center">
+        {/* Logo */}
+        <div className="mb-7">
+          <Logo className="h-10" />
         </div>
-        <h1 className="text-lg font-medium text-principal">Contenu réservé aux adultes</h1>
-        <p className="mt-2 text-sm text-secondaire">
-          Ce site contient des annonces réservées aux personnes majeures. Vous devez avoir{" "}
-          <b>18 ans ou plus</b> pour y accéder.
+
+        {/* Pastille 18+ */}
+        <div className="mb-5 flex h-[72px] w-[72px] items-center justify-center rounded-pill border-2 border-feuille-clair bg-tint-succes">
+          <span className="text-2xl font-medium text-texte-succes">18+</span>
+        </div>
+
+        <h1 className="text-xl font-medium text-sur-foret">Contenu réservé aux adultes</h1>
+        <p className="mt-2.5 max-w-xs text-sm leading-relaxed text-sur-foret-mute">
+          Ce site contient des annonces pour adultes. Vous devez avoir <b className="text-sur-foret">18 ans ou plus</b>{" "}
+          pour entrer.
         </p>
-        <p className="mt-2 text-xs text-tertiaire">
-          En continuant, vous confirmez être majeur(e) et accepter nos conditions d'utilisation.
-        </p>
-        <div className="mt-5 space-y-2">
+
+        <div className="mt-6 w-full space-y-2.5">
           <button
             onClick={accepter}
-            className="w-full rounded-champ bg-feuille py-3 text-sm font-medium text-sur-vert"
+            className="w-full rounded-champ bg-feuille py-3.5 text-[15px] font-medium text-sur-vert"
           >
-            J'ai 18 ans ou plus — Entrer
+            ✅ J'ai 18 ans ou plus — Entrer
           </button>
           <button
             onClick={quitter}
-            className="w-full rounded-champ border border-bordure py-3 text-sm font-medium text-principal"
+            className="w-full rounded-champ border border-bordure-forte/30 py-3 text-sm font-medium text-sur-foret-mute"
+            style={{ borderColor: "#2C4A38" }}
           >
-            Quitter
+            🚪 Quitter
           </button>
         </div>
-        <div className="mt-4 flex justify-center gap-3 text-[11px] text-tertiaire">
-          <a href="/cgu" className="underline">CGU</a>
-          <a href="/confidentialite" className="underline">Confidentialité</a>
-          <a href="/mentions-legales" className="underline">Mentions légales</a>
-        </div>
+
+        <p className="mt-6 max-w-xs text-[11px] leading-relaxed text-tertiaire">
+          En entrant, vous acceptez les{" "}
+          <a href="/cgu" className="text-sur-foret-mute underline">CGU</a> et la{" "}
+          <a href="/confidentialite" className="text-sur-foret-mute underline">politique de confidentialité</a>.
+        </p>
       </div>
     </div>
   );
