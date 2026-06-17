@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Compass, Plus, MessageSquare, User } from "lucide-react";
+import { Home, Heart, Plus, MessageSquare, User } from "lucide-react";
 
 // Onglets de navigation principaux (mobile). Masquée sur les pages de détail.
-const TABS_VISIBLES = ["/", "/explorer", "/messages", "/compte"];
+const TABS_VISIBLES = ["/", "/favoris", "/messages", "/compte"];
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -22,9 +22,9 @@ export function BottomNav() {
         <Home className="h-[22px] w-[22px]" strokeWidth={actif("/") ? 2.2 : 1.7} />
         <span className={actif("/") ? "font-medium" : ""}>Accueil</span>
       </Link>
-      <Link href="/explorer" className={cls("/explorer")}>
-        <Compass className="h-[22px] w-[22px]" strokeWidth={actif("/explorer") ? 2.2 : 1.7} />
-        <span className={actif("/explorer") ? "font-medium" : ""}>Explorer</span>
+      <Link href="/favoris" className={cls("/favoris")}>
+        <Heart className="h-[22px] w-[22px]" strokeWidth={actif("/favoris") ? 2.2 : 1.7} />
+        <span className={actif("/favoris") ? "font-medium" : ""}>Favoris</span>
       </Link>
       <Link href="/publier" className="flex flex-col items-center gap-0.5 -mt-5">
         <span className="flex h-12 w-12 items-center justify-center rounded-pill bg-feuille text-sur-vert shadow-lg shadow-feuille/30">

@@ -53,7 +53,7 @@ export default function PremiumPage() {
             <span className="font-medium text-principal">{fcfa(soldeApres)}</span>
           </div>
         </div>
-        <Link href="/explorer" className="mt-6 w-full rounded-champ bg-feuille py-3 text-sm font-medium text-sur-vert">
+        <Link href="/" className="mt-6 w-full rounded-champ bg-feuille py-3 text-sm font-medium text-sur-vert">
           Voir mon annonce
         </Link>
         <Link href="/portefeuille" className="mt-2 text-sm text-action-verte">

@@ -89,6 +89,10 @@ export default function ConnexionPage() {
           >
             {pending ? "Connexion…" : "Se connecter"}
           </button>
+
+          <Link href="/mot-de-passe-oublie" className="block text-center text-sm text-action-verte">
+            Mot de passe oublié ?
+          </Link>
         </form>
 
         <p className="mt-5 text-center text-sm text-secondaire">

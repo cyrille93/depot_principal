@@ -35,6 +35,10 @@ export default async function ComptePage() {
   const role = session.user.role;
   const userId = session.user.id;
 
+  // 1re connexion après réinitialisation : forcer le changement de mot de passe
+  const compte = await db.user.findUnique({ where: { id: userId }, select: { doitChangerMotDePasse: true } });
+  if (compte?.doitChangerMotDePasse) redirect("/changer-mot-de-passe");
+
   const [profil, porte, annonces] = await Promise.all([
     db.profil.findUnique({ where: { userId }, include: { ville: true } }),
     db.portefeuille.findUnique({ where: { userId }, select: { solde: true } }),
@@ -97,7 +101,7 @@ export default async function ComptePage() {
           </Link>
         )}
 
-        <Link href="/explorer" className="flex flex-col gap-2 rounded-carte border border-bordure bg-carte p-4">
+        <Link href="/" className="flex flex-col gap-2 rounded-carte border border-bordure bg-carte p-4">
           <Compass className="h-5 w-5 text-action-verte" />
           <span className="text-sm font-medium text-principal">Explorer</span>
           <span className="text-xs text-secondaire">Parcourir les profils</span>

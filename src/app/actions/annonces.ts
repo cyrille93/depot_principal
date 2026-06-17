@@ -130,7 +130,7 @@ export async function modifierAnnonce(
 
   revalidatePath(`/profil/${id}`);
   revalidatePath("/compte");
-  revalidatePath("/explorer");
+  revalidatePath("/");
   return { ok: true };
 }
 
@@ -146,7 +146,7 @@ export async function basculerMonAnnonce(id: string): Promise<{ ok?: boolean; st
   const nouveau = a.statut === "ACTIVE" ? "SUSPENDUE" : "ACTIVE";
   await db.annonce.update({ where: { id }, data: { statut: nouveau } });
   revalidatePath("/compte");
-  revalidatePath("/explorer");
+  revalidatePath("/");
   return { ok: true, statut: nouveau };
 }
 
@@ -158,6 +158,6 @@ export async function supprimerMonAnnonce(id: string): Promise<{ ok?: boolean; e
   if (!a || a.userId !== session.user.id) return { error: "Annonce introuvable." };
   await db.annonce.update({ where: { id }, data: { statut: "SUPPRIMEE" } });
   revalidatePath("/compte");
-  revalidatePath("/explorer");
+  revalidatePath("/");
   return { ok: true };
 }

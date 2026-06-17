@@ -37,7 +37,7 @@ export async function enregistrerLogo(dataUrl: string): Promise<{ ok?: boolean; 
   if (dataUrl.length > 3_000_000) return { error: "Image trop lourde (max ~2 Mo)." };
   await setParam("logo", dataUrl);
   revalidatePath("/");
-  revalidatePath("/explorer");
+  revalidatePath("/");
   revalidatePath("/admin");
   return { ok: true };
 }
@@ -50,7 +50,7 @@ export async function reinitialiserLogo(): Promise<{ ok?: boolean; error?: strin
     /* déjà absent */
   }
   revalidatePath("/");
-  revalidatePath("/explorer");
+  revalidatePath("/");
   revalidatePath("/admin");
   return { ok: true };
 }

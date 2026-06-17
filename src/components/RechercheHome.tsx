@@ -48,7 +48,7 @@ export function RechercheHome({
     if (service) p.set("service", service);
     if (actifs.size) p.set("tier", [...actifs].join(","));
     const qs = p.toString();
-    router.push(qs ? `/explorer?${qs}` : "/explorer");
+    router.push(qs ? `/?${qs}` : "/");
   };
 
   const champ =

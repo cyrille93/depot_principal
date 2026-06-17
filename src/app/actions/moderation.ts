@@ -18,7 +18,7 @@ export async function validerAnnonce(id: string): Promise<ModState> {
   const a = await db.annonce.update({ where: { id }, data: { statut: "ACTIVE" }, select: { userId: true, titre: true } });
   await creerNotification(a.userId, "ANNONCE_VALIDEE", "Annonce validée", `Votre annonce « ${a.titre} » est maintenant en ligne.`, `/profil/${id}`);
   revalidatePath("/admin");
-  revalidatePath("/explorer");
+  revalidatePath("/");
   return { ok: true };
 }
 
@@ -49,7 +49,7 @@ export async function validerVerification(id: string): Promise<ModState> {
   const libelle = v.type === "TELEPHONE" ? "Téléphone vérifié" : v.type === "IDENTITE" ? "Pièce d'identité vérifiée" : "Selfie vérifié";
   await creerNotification(v.userId, "VERIFICATION", libelle, "Votre vérification a été approuvée. Le badge vérifié apparaît sur votre profil.", "/verification");
   revalidatePath("/admin");
-  revalidatePath("/explorer");
+  revalidatePath("/");
   return { ok: true };
 }
 
@@ -62,9 +62,28 @@ export async function refuserVerification(id: string): Promise<ModState> {
 
 export async function suspendreAnnonce(id: string): Promise<ModState> {
   if (!(await exigerAdmin())) return { error: "Accès réservé aux administrateurs." };
-  await db.annonce.update({ where: { id }, data: { statut: "SUSPENDUE" } });
+  const a = await db.annonce.update({ where: { id }, data: { statut: "SUSPENDUE" }, select: { userId: true, titre: true } });
+  await creerNotification(a.userId, "ANNONCE_REFUSEE", "Annonce suspendue", `Votre annonce « ${a.titre} » a été suspendue par la modération.`, "/compte");
   revalidatePath("/admin");
-  revalidatePath("/explorer");
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function reactiverAnnonce(id: string): Promise<ModState> {
+  if (!(await exigerAdmin())) return { error: "Accès réservé aux administrateurs." };
+  const a = await db.annonce.update({ where: { id }, data: { statut: "ACTIVE" }, select: { userId: true, titre: true } });
+  await creerNotification(a.userId, "ANNONCE_VALIDEE", "Annonce remise en ligne", `Votre annonce « ${a.titre} » est de nouveau visible.`, `/profil/${id}`);
+  revalidatePath("/admin");
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function supprimerAnnonceAdmin(id: string): Promise<ModState> {
+  if (!(await exigerAdmin())) return { error: "Accès réservé aux administrateurs." };
+  const a = await db.annonce.update({ where: { id }, data: { statut: "SUPPRIMEE" }, select: { userId: true, titre: true } });
+  await creerNotification(a.userId, "ANNONCE_REFUSEE", "Annonce supprimée", `Votre annonce « ${a.titre} » a été supprimée par la modération.`, "/compte");
+  revalidatePath("/admin");
+  revalidatePath("/");
   return { ok: true };
 }
 

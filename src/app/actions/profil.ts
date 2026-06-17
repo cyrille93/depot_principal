@@ -13,7 +13,7 @@ export async function definirDisponibilite(disponible: boolean): Promise<{ ok?: 
     return { error: "Profil introuvable." };
   }
   revalidatePath("/compte");
-  revalidatePath("/explorer");
+  revalidatePath("/");
   revalidatePath("/");
   return { ok: true };
 }

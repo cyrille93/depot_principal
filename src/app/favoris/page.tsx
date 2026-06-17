@@ -14,7 +14,7 @@ export default async function FavorisPage() {
   const profils = await listerFavoris(session.user.id);
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-5">
+    <main className="mx-auto max-w-5xl px-4 py-5 pb-24 md:pb-5">
       <div className="mb-4 flex items-center gap-1">
         <Link href="/compte" className="flex items-center gap-1 text-sm text-secondaire">
           <ChevronLeft className="h-5 w-5" /> Mon compte
@@ -28,7 +28,7 @@ export default async function FavorisPage() {
       {profils.length === 0 ? (
         <div className="mt-6 rounded-carte border border-bordure bg-carte p-10 text-center">
           <p className="text-sm text-secondaire">Vous n'avez pas encore de favori.</p>
-          <Link href="/explorer" className="mt-2 inline-block text-sm font-medium text-action-verte">
+          <Link href="/" className="mt-2 inline-block text-sm font-medium text-action-verte">
             Explorer les profils →
           </Link>
         </div>

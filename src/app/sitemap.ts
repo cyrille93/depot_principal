@@ -21,7 +21,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const statiques: MetadataRoute.Sitemap = [
     { url: `${SITE_URL}/`, changeFrequency: "daily", priority: 1 },
     { url: `${SITE_URL}/annonces`, changeFrequency: "daily", priority: 0.9 },
-    { url: `${SITE_URL}/explorer`, changeFrequency: "daily", priority: 0.8 },
   ];
 
   const pagesCategorie: MetadataRoute.Sitemap = CATEGORIES_SEO.map((c) => ({

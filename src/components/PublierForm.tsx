@@ -101,7 +101,7 @@ export function PublierForm({ villes }: { villes: { id: string; nom: string }[] 
           Elle passe en modération (contrôle anti-mineurs et conformité) avant publication.
           Vous serez notifié dès sa mise en ligne.
         </p>
-        <Link href="/explorer" className="mt-6 rounded-champ bg-feuille px-5 py-2.5 text-sm font-medium text-sur-vert">
+        <Link href="/" className="mt-6 rounded-champ bg-feuille px-5 py-2.5 text-sm font-medium text-sur-vert">
           Retour à l'accueil
         </Link>
       </main>
@@ -111,7 +111,7 @@ export function PublierForm({ villes }: { villes: { id: string; nom: string }[] 
   return (
     <main className="mx-auto max-w-xl px-4 py-5">
       <div className="mb-4 flex items-center gap-1">
-        <Link href="/explorer" className="flex items-center gap-1 text-sm text-secondaire">
+        <Link href="/" className="flex items-center gap-1 text-sm text-secondaire">
           <ChevronLeft className="h-5 w-5" /> Retour
         </Link>
       </div>

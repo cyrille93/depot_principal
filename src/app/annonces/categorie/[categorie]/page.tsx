@@ -67,7 +67,7 @@ export default async function Page({ params }: { params: Promise<Params> }) {
       <JsonLd data={jsonLd} />
       <header className="flex items-center justify-between border-b border-bordure bg-carte px-4 py-3 md:px-10">
         <Link href="/" className="text-lg font-medium text-principal">{MARQUE_SEO}</Link>
-        <Link href="/explorer" className="rounded-champ bg-feuille px-4 py-2 text-sm font-medium text-sur-vert">
+        <Link href="/" className="rounded-champ bg-feuille px-4 py-2 text-sm font-medium text-sur-vert">
           Explorer
         </Link>
       </header>

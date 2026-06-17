@@ -150,7 +150,7 @@ export function FicheProfil({
   return (
     <main className="mx-auto max-w-5xl px-4 py-5">
       <div className="mb-4 flex items-center justify-between">
-        <Link href="/explorer" className="flex items-center gap-1 text-sm text-secondaire">
+        <Link href="/" className="flex items-center gap-1 text-sm text-secondaire">
           <ChevronLeft className="h-5 w-5" /> Retour
         </Link>
         <div className="flex items-center gap-4 text-secondaire">

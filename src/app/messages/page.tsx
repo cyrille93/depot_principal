@@ -35,7 +35,7 @@ export default async function MessagesPage() {
       {convs.length === 0 ? (
         <div className="mt-6 rounded-carte border border-bordure bg-carte p-10 text-center">
           <p className="text-sm text-secondaire">Aucune conversation pour le moment.</p>
-          <Link href="/explorer" className="mt-2 inline-block text-sm font-medium text-action-verte">
+          <Link href="/" className="mt-2 inline-block text-sm font-medium text-action-verte">
             Explorer les profils →
           </Link>
         </div>

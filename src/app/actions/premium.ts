@@ -62,7 +62,7 @@ export async function acheterMiseEnAvant(
     "/booster/suivi"
   );
 
-  revalidatePath("/explorer");
+  revalidatePath("/");
   revalidatePath("/compte");
   revalidatePath("/portefeuille");
   revalidatePath("/booster/suivi");

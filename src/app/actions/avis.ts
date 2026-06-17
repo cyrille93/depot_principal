@@ -58,7 +58,7 @@ export async function laisserAvis(annonceId: string, p: Payload): Promise<AvisSt
   );
 
   revalidatePath(`/profil/${annonceId}`);
-  revalidatePath("/explorer");
+  revalidatePath("/");
   revalidatePath("/");
   return { ok: true };
 }

@@ -17,6 +17,10 @@ import {
   ShieldCheck,
   MessageSquare,
   Ban,
+  Eye,
+  Trash2,
+  Power,
+  KeyRound,
 } from "lucide-react";
 import { ContenuEditor } from "@/components/ContenuEditor";
 import { Logo } from "@/components/Logo";
@@ -27,6 +31,7 @@ const NAV = [
   { label: "Utilisateurs", icon: Users },
   { label: "Annonces", icon: FileText },
   { label: "Signalements", icon: Flag },
+  { label: "Mots de passe", icon: KeyRound },
   { label: "Parrainage", icon: Gift },
   { label: "Pages légales", icon: ScrollText },
   { label: "Apparence", icon: ImagePlus },
@@ -64,6 +69,9 @@ export function AdminClient({
   validerVerification,
   refuserVerification,
   suspendreAnnonce,
+  toutesAnnonces: toutesAnnoncesInit,
+  reactiverAnnonce,
+  supprimerAnnonceAdmin,
   contacterUtilisateur,
   suspendreCompte,
   reactiverCompte,
@@ -71,6 +79,9 @@ export function AdminClient({
   enregistrerParrainage,
   enregistrerLogo,
   reinitialiserLogo,
+  demandesReset: demandesResetInit,
+  genererMotDePasseTemporaire,
+  rejeterDemandeReset,
 }: {
   stats: AdminStats;
   annonces: AnnonceAttente[];
@@ -88,6 +99,9 @@ export function AdminClient({
   validerVerification: (id: string) => Promise<{ ok?: boolean; error?: string }>;
   refuserVerification: (id: string) => Promise<{ ok?: boolean; error?: string }>;
   suspendreAnnonce: (id: string) => Promise<{ ok?: boolean; error?: string }>;
+  toutesAnnonces: { id: string; titre: string; pseudo: string; ville: string; prix: number; statut: string; cat: string }[];
+  reactiverAnnonce: (id: string) => Promise<{ ok?: boolean; error?: string }>;
+  supprimerAnnonceAdmin: (id: string) => Promise<{ ok?: boolean; error?: string }>;
   contacterUtilisateur: (id: string) => Promise<{ error?: string }>;
   suspendreCompte: (id: string) => Promise<{ ok?: boolean; error?: string }>;
   reactiverCompte: (id: string) => Promise<{ ok?: boolean; error?: string }>;
@@ -95,10 +109,17 @@ export function AdminClient({
   enregistrerParrainage: (taux: number, dureeMois: number) => Promise<{ ok?: boolean; error?: string }>;
   enregistrerLogo: (dataUrl: string) => Promise<{ ok?: boolean; error?: string }>;
   reinitialiserLogo: () => Promise<{ ok?: boolean; error?: string }>;
+  demandesReset: { id: string; identifiant: string; pseudo: string; quand: string }[];
+  genererMotDePasseTemporaire: (id: string) => Promise<{ ok?: boolean; error?: string; motDePasse?: string }>;
+  rejeterDemandeReset: (id: string) => Promise<{ ok?: boolean; error?: string }>;
 }) {
   const toast = useToast();
   const [onglet, setOnglet] = useState("Tableau de bord");
   const [annonces, setAnnonces] = useState(annoncesInit);
+  const [demandes, setDemandes] = useState(demandesResetInit);
+  const [mdpGeneres, setMdpGeneres] = useState<Record<string, string>>({});
+  const [toutesAnnonces, setToutesAnnonces] = useState(toutesAnnoncesInit);
+  const [confirmSuppr, setConfirmSuppr] = useState<string | null>(null);
   const [signalements, setSignalements] = useState(signalementsInit);
   const [verifs, setVerifs] = useState(verifsInit);
   const [users, setUsers] = useState(utilisateursInit);
@@ -108,6 +129,56 @@ export function AdminClient({
   const [savingParr, setSavingParr] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [savingLogo, setSavingLogo] = useState(false);
+
+  // Modération depuis la liste complète des annonces
+  const majStatutLocal = (id: string, statut: string) =>
+    setToutesAnnonces((prev) => prev.map((a) => (a.id === id ? { ...a, statut } : a)));
+
+  const suspendreDepuisListe = (id: string) => {
+    majStatutLocal(id, "SUSPENDUE");
+    startTransition(async () => {
+      const r = await suspendreAnnonce(id);
+      toast(r.ok ? "Annonce suspendue." : r.error ?? "Erreur.", r.ok ? "success" : "error");
+    });
+  };
+
+  const reactiverDepuisListe = (id: string) => {
+    majStatutLocal(id, "ACTIVE");
+    startTransition(async () => {
+      const r = await reactiverAnnonce(id);
+      toast(r.ok ? "Annonce remise en ligne." : r.error ?? "Erreur.", r.ok ? "success" : "error");
+    });
+  };
+
+  const supprimerDepuisListe = (id: string) => {
+    setConfirmSuppr(null);
+    setToutesAnnonces((prev) => prev.filter((a) => a.id !== id));
+    startTransition(async () => {
+      const r = await supprimerAnnonceAdmin(id);
+      toast(r.ok ? "Annonce supprimée." : r.error ?? "Erreur.", r.ok ? "success" : "error");
+    });
+  };
+
+  // Demandes de réinitialisation de mot de passe
+  const genererMdp = (id: string) => {
+    startTransition(async () => {
+      const r = await genererMotDePasseTemporaire(id);
+      if (r.ok && r.motDePasse) {
+        setMdpGeneres((m) => ({ ...m, [id]: r.motDePasse! }));
+        toast("Mot de passe temporaire généré.", "success");
+      } else {
+        toast(r.error ?? "Erreur.", "error");
+      }
+    });
+  };
+
+  const rejeterDemande = (id: string) => {
+    setDemandes((prev) => prev.filter((d) => d.id !== id));
+    startTransition(async () => {
+      const r = await rejeterDemandeReset(id);
+      toast(r.ok ? "Demande rejetée." : r.error ?? "Erreur.", r.ok ? "success" : "error");
+    });
+  };
 
   const sauverParrainage = async () => {
     setSavingParr(true);
@@ -195,6 +266,105 @@ export function AdminClient({
             <button onClick={() => refuser(a.id)} className="flex h-8 w-8 items-center justify-center rounded-petit bg-pill-fond text-pill-texte" aria-label="Refuser">
               <X className="h-4 w-4" strokeWidth={2.5} />
             </button>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+
+  const STATUT_LABEL: Record<string, string> = {
+    ACTIVE: "En ligne", EN_ATTENTE: "En attente", SUSPENDUE: "Suspendue", REFUSEE: "Refusée", BROUILLON: "Brouillon",
+  };
+  const statutBadge = (s: string) => {
+    if (s === "ACTIVE") return "bg-tint-succes text-texte-succes";
+    if (s === "SUSPENDUE") return "bg-vip text-white";
+    if (s === "EN_ATTENTE") return "bg-pill-fond text-pill-texte";
+    return "bg-surface-neutre text-secondaire";
+  };
+
+  const ToutesAnnoncesSection = (
+    <section className="rounded-carte border border-bordure bg-carte p-4">
+      <h2 className="mb-3 text-sm font-medium text-principal">Toutes les annonces ({toutesAnnonces.length})</h2>
+      <div className="max-h-[520px] space-y-2 overflow-y-auto pr-1">
+        {toutesAnnonces.length === 0 && <p className="py-6 text-center text-sm text-tertiaire">Aucune annonce.</p>}
+        {toutesAnnonces.map((a) => (
+          <div key={a.id} className="flex flex-wrap items-center gap-2 rounded-petit border border-bordure p-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="truncate text-sm text-principal">{a.titre}</span>
+                <span className={`shrink-0 rounded-pill px-2 py-0.5 text-[10px] font-medium ${statutBadge(a.statut)}`}>
+                  {STATUT_LABEL[a.statut] ?? a.statut}
+                </span>
+              </div>
+              <div className="text-[11px] text-secondaire">{a.pseudo} · {a.cat} · {a.ville} · {a.prix.toLocaleString("fr-FR")} F</div>
+            </div>
+
+            <Link
+              href={`/profil/${a.id}`}
+              target="_blank"
+              className="flex items-center gap-1 rounded-champ border border-bordure px-2.5 py-1.5 text-xs font-medium text-principal"
+            >
+              <Eye className="h-3.5 w-3.5" /> Consulter
+            </Link>
+
+            {a.statut === "SUSPENDUE" ? (
+              <button onClick={() => reactiverDepuisListe(a.id)} className="flex items-center gap-1 rounded-champ bg-tint-succes px-2.5 py-1.5 text-xs font-medium text-texte-succes">
+                <Power className="h-3.5 w-3.5" /> Réactiver
+              </button>
+            ) : (
+              <button onClick={() => suspendreDepuisListe(a.id)} className="flex items-center gap-1 rounded-champ bg-vip px-2.5 py-1.5 text-xs font-medium text-white">
+                <Ban className="h-3.5 w-3.5" /> Suspendre
+              </button>
+            )}
+
+            {confirmSuppr === a.id ? (
+              <button onClick={() => supprimerDepuisListe(a.id)} className="flex items-center gap-1 rounded-champ bg-vip px-2.5 py-1.5 text-xs font-medium text-white">
+                <Trash2 className="h-3.5 w-3.5" /> Confirmer ?
+              </button>
+            ) : (
+              <button onClick={() => setConfirmSuppr(a.id)} className="flex items-center gap-1 rounded-champ border border-bordure px-2.5 py-1.5 text-xs font-medium text-secondaire" aria-label="Supprimer">
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+
+  const DemandesResetSection = (
+    <section className="rounded-carte border border-bordure bg-carte p-4">
+      <h2 className="mb-1 text-sm font-medium text-principal">Demandes de mot de passe ({demandes.length})</h2>
+      <p className="mb-3 text-xs text-secondaire">
+        Générez un mot de passe temporaire et transmettez-le à l'utilisateur (WhatsApp, appel…). Il devra le changer dès
+        sa prochaine connexion.
+      </p>
+      <div className="space-y-2">
+        {demandes.length === 0 && <p className="py-6 text-center text-sm text-tertiaire">Aucune demande en attente.</p>}
+        {demandes.map((d) => (
+          <div key={d.id} className="flex flex-wrap items-center gap-2 rounded-petit border border-bordure p-3">
+            <div className="min-w-0 flex-1">
+              <div className="text-sm text-principal">{d.pseudo}</div>
+              <div className="text-[11px] text-secondaire">{d.identifiant} · {d.quand}</div>
+            </div>
+            {mdpGeneres[d.id] ? (
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-secondaire">Mot de passe :</span>
+                <code className="rounded-petit bg-tint-succes px-3 py-1.5 text-sm font-medium tracking-wider text-texte-succes">{mdpGeneres[d.id]}</code>
+                <button onClick={() => navigator.clipboard?.writeText(mdpGeneres[d.id])} className="rounded-champ border border-bordure px-2.5 py-1.5 text-xs text-principal">
+                  Copier
+                </button>
+              </div>
+            ) : (
+              <>
+                <button onClick={() => genererMdp(d.id)} className="flex items-center gap-1 rounded-champ bg-feuille px-2.5 py-1.5 text-xs font-medium text-sur-vert">
+                  <KeyRound className="h-3.5 w-3.5" /> Générer un mot de passe
+                </button>
+                <button onClick={() => rejeterDemande(d.id)} className="rounded-champ border border-bordure px-2.5 py-1.5 text-xs text-secondaire">
+                  Rejeter
+                </button>
+              </>
+            )}
           </div>
         ))}
       </div>
@@ -403,7 +573,12 @@ export function AdminClient({
             </>
           )}
 
-          {onglet === "Annonces" && AnnoncesSection}
+          {onglet === "Annonces" && (
+            <div className="space-y-4">
+              {AnnoncesSection}
+              {ToutesAnnoncesSection}
+            </div>
+          )}
 
           {onglet === "Signalements" && (
             <div className="grid grid-cols-1 gap-5">
@@ -411,6 +586,8 @@ export function AdminClient({
               {VerifsSection}
             </div>
           )}
+
+          {onglet === "Mots de passe" && DemandesResetSection}
 
           {onglet === "Parrainage" && (
             <div className="space-y-5">
@@ -520,7 +697,7 @@ export function AdminClient({
           )}
 
           <div className="mt-6 text-center">
-            <Link href="/explorer" className="text-sm text-action-verte">← Retour au site</Link>
+            <Link href="/" className="text-sm text-action-verte">← Retour au site</Link>
           </div>
         </div>
       </div>

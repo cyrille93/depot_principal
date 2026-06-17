@@ -3,7 +3,8 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { fcfa } from "@/lib/mock";
 import { AdminClient } from "@/components/AdminClient";
-import { validerAnnonce, refuserAnnonce, traiterSignalement, validerVerification, refuserVerification, suspendreAnnonce, suspendreCompte, reactiverCompte } from "@/app/actions/moderation";
+import { validerAnnonce, refuserAnnonce, traiterSignalement, validerVerification, refuserVerification, suspendreAnnonce, reactiverAnnonce, supprimerAnnonceAdmin, suspendreCompte, reactiverCompte } from "@/app/actions/moderation";
+import { genererMotDePasseTemporaire, rejeterDemandeReset } from "@/app/actions/reset";
 import { contacterUtilisateur } from "@/app/actions/messages";
 import { enregistrerContenuPage } from "@/app/actions/contenus";
 import { enregistrerParrainage, enregistrerLogo, reinitialiserLogo } from "@/app/actions/parametres";
@@ -44,7 +45,7 @@ export default async function AdminPage() {
   const debutMois = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   const seuilEnLigne = new Date(Date.now() - 5 * 60 * 1000);
 
-  const [nbUsers, nbActives, nbSignal, commAgg, rechAgg, enAttente, signalements, verifsPending, usersRows, enLigne, parrainagesRows] = await Promise.all([
+  const [nbUsers, nbActives, nbSignal, commAgg, rechAgg, enAttente, signalements, verifsPending, usersRows, enLigne, parrainagesRows, toutesAnnoncesRows] = await Promise.all([
     db.user.count(),
     db.annonce.count({ where: { statut: "ACTIVE" } }),
     db.signalement.count({ where: { statut: "OUVERT" } }),
@@ -79,6 +80,12 @@ export default async function AdminPage() {
         commissions: { select: { montant: true, statut: true } },
       },
     }),
+    db.annonce.findMany({
+      where: { statut: { not: "SUPPRIMEE" } },
+      include: { user: { include: { profil: true } }, ville: true },
+      orderBy: { createdAt: "desc" },
+      take: 200,
+    }),
   ]);
 
   const stats = {
@@ -95,6 +102,18 @@ export default async function AdminPage() {
     titre: a.titre,
     pseudo: a.user.profil?.pseudo ?? a.user.email?.split("@")[0] ?? "Pro",
     ville: a.ville.nom,
+    cat: CATL[a.categorie] ?? a.categorie,
+  }));
+
+  // Toutes les annonces (hors supprimées) pour consultation + modération
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const toutesAnnonces = toutesAnnoncesRows.map((a: any) => ({
+    id: a.id,
+    titre: a.titre,
+    pseudo: a.user.profil?.pseudo ?? a.user.email?.split("@")[0] ?? "Pro",
+    ville: a.ville.nom,
+    prix: a.prix,
+    statut: a.statut as string,
     cat: CATL[a.categorie] ?? a.categorie,
   }));
 
@@ -162,10 +181,24 @@ export default async function AdminPage() {
 
   const config = await getParrainageConfig();
 
+  const demandesRows = await db.demandeReset.findMany({
+    where: { statut: "OUVERTE" },
+    orderBy: { createdAt: "desc" },
+    include: { user: { select: { email: true, telephone: true, profil: { select: { pseudo: true } } } } },
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const demandesReset = demandesRows.map((d: any) => ({
+    id: d.id,
+    identifiant: d.identifiant,
+    pseudo: d.user.profil?.pseudo ?? d.user.email?.split("@")[0] ?? d.user.telephone ?? "Utilisateur",
+    quand: d.createdAt.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }),
+  }));
+
   return (
     <AdminClient
       stats={stats}
       annonces={annonces}
+      toutesAnnonces={toutesAnnonces}
       signalements={sigs}
       verifs={verifs}
       utilisateurs={utilisateurs}
@@ -180,6 +213,8 @@ export default async function AdminPage() {
       validerVerification={validerVerification}
       refuserVerification={refuserVerification}
       suspendreAnnonce={suspendreAnnonce}
+      reactiverAnnonce={reactiverAnnonce}
+      supprimerAnnonceAdmin={supprimerAnnonceAdmin}
       contacterUtilisateur={contacterUtilisateur}
       suspendreCompte={suspendreCompte}
       reactiverCompte={reactiverCompte}
@@ -187,6 +222,9 @@ export default async function AdminPage() {
       enregistrerParrainage={enregistrerParrainage}
       enregistrerLogo={enregistrerLogo}
       reinitialiserLogo={reinitialiserLogo}
+      demandesReset={demandesReset}
+      genererMotDePasseTemporaire={genererMotDePasseTemporaire}
+      rejeterDemandeReset={rejeterDemandeReset}
     />
   );
 }
