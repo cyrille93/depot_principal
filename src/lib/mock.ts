@@ -100,6 +100,7 @@ export type ProfilDetail = ProfilFictif & {
   medias?: { url: string; floutee: boolean }[];
   criteres: { label: string; note: number }[];
   verif: { telephone: boolean; identite: boolean; selfie: boolean };
+  telephoneContact?: string | null;
   avisListe: Avis[];
 };
 

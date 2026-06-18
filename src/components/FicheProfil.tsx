@@ -72,6 +72,17 @@ function CarteAction({ p }: { p: ProfilDetail }) {
   const toast = useToast();
   const dispo = p.statut === "Disponible";
 
+  // Lien WhatsApp : on nettoie le numéro et on préfixe l'indicatif Cameroun (237) si besoin
+  const lienWa = (() => {
+    let n = (p.telephoneContact ?? "").replace(/\D/g, "");
+    if (!n) return null;
+    if (n.startsWith("00")) n = n.slice(2);
+    if (n.startsWith("0")) n = n.slice(1);
+    if (!n.startsWith("237") && n.length <= 9) n = "237" + n;
+    const texte = encodeURIComponent(`Bonjour, je vous contacte via Rose Annonce au sujet de votre annonce (${p.pseudo}).`);
+    return `https://wa.me/${n}?text=${texte}`;
+  })();
+
   const contacter = async () => {
     const res = await demarrerConversation(p.id);
     if (res?.error) toast(res.error, "error");
@@ -110,9 +121,31 @@ function CarteAction({ p }: { p: ProfilDetail }) {
         {p.statut}
       </span>
 
-      <button onClick={contacter} className="mt-4 flex w-full items-center justify-center gap-2 rounded-champ bg-feuille py-3 text-sm font-medium text-sur-vert">
-        <MessageCircle className="h-[18px] w-[18px]" /> Contacter
-      </button>
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <button onClick={contacter} className="flex items-center justify-center gap-2 rounded-champ bg-feuille py-3 text-sm font-medium text-sur-vert">
+          <MessageCircle className="h-[18px] w-[18px]" /> Écrire ici
+        </button>
+        {lienWa ? (
+          <a
+            href={lienWa}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 rounded-champ py-3 text-sm font-medium"
+            style={{ backgroundColor: "#25D366", color: "#0B2A18" }}
+          >
+            <Phone className="h-[18px] w-[18px]" /> WhatsApp
+          </a>
+        ) : (
+          <span className="flex items-center justify-center gap-2 rounded-champ bg-surface-neutre py-3 text-sm font-medium text-tertiaire">
+            <Phone className="h-[18px] w-[18px]" /> WhatsApp
+          </span>
+        )}
+      </div>
+      {lienWa && p.telephoneContact && (
+        <a href={lienWa} target="_blank" rel="noopener noreferrer" className="mt-2 block text-center text-xs text-action-verte">
+          ou continuez sur WhatsApp : {p.telephoneContact}
+        </a>
+      )}
 
       <div className="mt-3 flex gap-2">
         <button

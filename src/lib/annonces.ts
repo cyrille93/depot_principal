@@ -232,6 +232,7 @@ export async function getAnnonceDetail(id: string): Promise<ProfilDetail | null>
       identite: a.user.identiteVerifiee,
       selfie: a.user.selfieVerifie,
     },
+    telephoneContact: a.user.telephone,
     avisListe,
   };
 }
