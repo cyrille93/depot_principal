@@ -27,6 +27,20 @@ export function InscriptionForm({ villes }: { villes: { id: string; nom: string 
 
         <form action={action} className="mt-6 space-y-4">
           <div>
+            <label className="mb-1 block text-sm text-principal">Nom d'utilisateur <span className="text-vip">*</span></label>
+            <input
+              name="pseudo"
+              type="text"
+              required
+              minLength={2}
+              maxLength={30}
+              autoComplete="username"
+              className="w-full rounded-champ border border-bordure bg-carte px-3 py-2.5 text-sm text-principal outline-none focus:border-feuille"
+              placeholder="Ex. Sandra237"
+            />
+          </div>
+
+          <div>
             <label className="mb-1 block text-sm text-principal">Email <span className="text-vip">*</span></label>
             <input
               name="email"

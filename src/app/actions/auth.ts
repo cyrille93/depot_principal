@@ -27,6 +27,7 @@ export async function inscription(
   const { email, password, role, telephone, villeId, codeParrain } = parsed.data;
   const emailNorm = email.trim().toLowerCase();
   const telNorm = telephone.replace(/\s+/g, "");
+  const pseudoSaisi = String(formData.get("pseudo") ?? "").trim().slice(0, 30);
 
   const existing = await db.user.findUnique({ where: { email: emailNorm } });
   if (existing) {
@@ -58,7 +59,7 @@ export async function inscription(
   }
 
   const codeParrainage = "CONF-" + crypto.randomUUID().slice(0, 6).toUpperCase();
-  const pseudo = emailNorm.split("@")[0];
+  const pseudo = pseudoSaisi.length >= 2 ? pseudoSaisi : emailNorm.split("@")[0];
   const motDePasseHash = await hashPassword(password);
 
   const user = await db.user.create({

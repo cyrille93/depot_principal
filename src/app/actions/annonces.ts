@@ -33,7 +33,7 @@ export async function creerAnnonce(
   if (description.length < 10) return { error: "La description est trop courte." };
   if (!CATS.includes(categorie as Cat)) return { error: "Catégorie invalide." };
   if (!villeId) return { error: "Choisissez une ville." };
-  if (!Number.isFinite(prix) || prix <= 0) return { error: "Tarif invalide." };
+  if (!Number.isFinite(prix) || prix < 0) return { error: "Tarif invalide." };
 
   // S'assurer que l'utilisateur a un profil (création minimale sinon)
   const pseudo = (session.user.email ?? "pro").split("@")[0];
@@ -87,7 +87,7 @@ export async function modifierAnnonce(
   if (description.length < 10) return { error: "La description est trop courte." };
   if (!CATS.includes(categorie as Cat)) return { error: "Catégorie invalide." };
   if (!villeId) return { error: "Choisissez une ville." };
-  if (!Number.isFinite(prix) || prix <= 0) return { error: "Tarif invalide." };
+  if (!Number.isFinite(prix) || prix < 0) return { error: "Tarif invalide." };
 
   const a = await db.annonce.findUnique({ where: { id }, select: { userId: true } });
   if (!a || a.userId !== session.user.id) return { error: "Annonce introuvable ou non autorisée." };

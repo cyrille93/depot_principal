@@ -109,7 +109,7 @@ export function ProfilCard({ profil }: { profil: ProfilFictif }) {
             {profil.statut}
           </span>
           <span className="text-sm font-medium text-principal">
-            dès {profil.prix.toLocaleString("fr-FR")} F
+            {profil.prix > 0 ? `dès ${profil.prix.toLocaleString("fr-FR")} F` : "À convenir"}
           </span>
         </div>
       </div>

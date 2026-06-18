@@ -27,7 +27,7 @@ export function FloutageEditor({
   initial: number;
   image?: string;
   onClose: () => void;
-  onSave: (count: number) => void;
+  onSave: (result: { count: number; src?: string }) => void;
 }) {
   const [zones, setZones] = useState<Zone[]>(
     Array.from({ length: initial }, (_, i) => ({ id: `z${seq++}`, x: 12 + i * 28, y: 22, w: DEF_W, h: DEF_H }))
@@ -72,6 +72,60 @@ export function FloutageEditor({
 
   const onPointerUp = () => {
     drag.current = null;
+  };
+
+  // Applique réellement le flou : on dessine l'image dans un canvas 4:3 (object-cover)
+  // puis on floute chaque zone, et on exporte une nouvelle image.
+  const appliquer = async () => {
+    if (!image || zones.length === 0) {
+      onSave({ count: zones.length, src: image });
+      return;
+    }
+    try {
+      const img = new window.Image();
+      img.src = image;
+      await img.decode();
+
+      const CW = Math.min(img.naturalWidth || 800, 1000);
+      const CH = Math.round((CW * 3) / 4);
+      const canvas = document.createElement("canvas");
+      canvas.width = CW;
+      canvas.height = CH;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { onSave({ count: zones.length, src: image }); return; }
+
+      // object-cover : couvre le cadre 4:3 et recadre au centre
+      const scale = Math.max(CW / img.naturalWidth, CH / img.naturalHeight);
+      const dw = img.naturalWidth * scale;
+      const dh = img.naturalHeight * scale;
+      const dx = (CW - dw) / 2;
+      const dy = (CH - dh) / 2;
+      ctx.drawImage(img, dx, dy, dw, dh);
+
+      // Le flou de l'aperçu (px CSS) est ramené à l'échelle du canvas
+      const rectW = canvasRef.current?.getBoundingClientRect().width || CW;
+      const flou = Math.max(2, Math.round(px * (CW / rectW)));
+
+      for (const z of zones) {
+        const zx = (z.x / 100) * CW;
+        const zy = (z.y / 100) * CH;
+        const zw = (z.w / 100) * CW;
+        const zh = (z.h / 100) * CH;
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(zx, zy, zw, zh);
+        ctx.clip();
+        ctx.filter = `blur(${flou}px)`;
+        ctx.drawImage(img, dx, dy, dw, dh);
+        ctx.restore();
+      }
+
+      const out = canvas.toDataURL("image/jpeg", 0.82);
+      onSave({ count: zones.length, src: out });
+    } catch {
+      // En cas d'échec, on conserve l'image d'origine et le compte
+      onSave({ count: zones.length, src: image });
+    }
   };
 
   return (
@@ -175,8 +229,8 @@ export function FloutageEditor({
           <button onClick={onClose} className="flex-1 rounded-champ border border-bordure py-2.5 text-sm text-principal">
             Annuler
           </button>
-          <button onClick={() => onSave(zones.length)} className="flex-1 rounded-champ bg-feuille py-2.5 text-sm font-medium text-sur-vert">
-            Enregistrer
+          <button onClick={appliquer} className="flex-1 rounded-champ bg-feuille py-2.5 text-sm font-medium text-sur-vert">
+            Appliquer le flou
           </button>
         </div>
       </div>

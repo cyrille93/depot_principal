@@ -88,10 +88,16 @@ function CarteAction({ p }: { p: ProfilDetail }) {
       </div>
 
       <div className="mt-3 text-sm text-secondaire">
-        À partir de{" "}
-        <span className="text-base font-medium text-principal">
-          {p.prix.toLocaleString("fr-FR")} F
-        </span>
+        {p.prix > 0 ? (
+          <>
+            À partir de{" "}
+            <span className="text-base font-medium text-principal">
+              {p.prix.toLocaleString("fr-FR")} F
+            </span>
+          </>
+        ) : (
+          <span className="text-base font-medium text-principal">Prix à convenir</span>
+        )}
       </div>
 
       <span

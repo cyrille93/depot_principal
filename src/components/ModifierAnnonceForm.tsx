@@ -239,8 +239,8 @@ export function ModifierAnnonceForm({
           initial={enEdition.floutes}
           image={estImg(enEdition.src) ? enEdition.src : undefined}
           onClose={() => setEditId(null)}
-          onSave={(count) => {
-            setMedias((m) => m.map((x) => (x.id === editId ? { ...x, floutes: count } : x)));
+          onSave={(result) => {
+            setMedias((m) => m.map((x) => (x.id === editId ? { ...x, floutes: result.count, src: result.src ?? x.src } : x)));
             setEditId(null);
           }}
         />

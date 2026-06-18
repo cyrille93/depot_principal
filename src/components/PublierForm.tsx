@@ -85,8 +85,8 @@ export function PublierForm({ villes }: { villes: { id: string; nom: string }[] 
   };
 
   const enEdition = medias.find((m) => m.id === editId) ?? null;
-  const enregistrerFloutage = (count: number) => {
-    setMedias((m) => m.map((x) => (x.id === editId ? { ...x, floutes: count } : x)));
+  const enregistrerFloutage = (result: { count: number; src?: string }) => {
+    setMedias((m) => m.map((x) => (x.id === editId ? { ...x, floutes: result.count, src: result.src ?? x.src } : x)));
     setEditId(null);
   };
 
@@ -160,13 +160,13 @@ export function PublierForm({ villes }: { villes: { id: string; nom: string }[] 
         </div>
 
         <div>
-          <label className="mb-1 block text-sm text-principal">Tarif (FCFA) <span className="text-vip">*</span></label>
+          <label className="mb-1 block text-sm text-principal">Tarif (FCFA) <span className="text-tertiaire">(optionnel)</span></label>
           <input
             name="prix"
             type="number"
-            required
+            min={0}
             className="w-full rounded-champ border border-bordure bg-carte px-3 py-2.5 text-sm outline-none focus:border-feuille"
-            placeholder="15000"
+            placeholder="Laisser vide pour « à convenir »"
           />
         </div>
 
@@ -174,8 +174,8 @@ export function PublierForm({ villes }: { villes: { id: string; nom: string }[] 
           <label className="mb-1 block text-sm text-principal">
             Photos <span className="text-tertiaire">({medias.length}/10)</span>
           </label>
-          <p className="mb-2 flex items-center gap-1.5 text-xs text-action-verte">
-            <ShieldAlert className="h-4 w-4" /> Floutez le visage ou toute partie du corps avant publication.
+          <p className="mb-2 flex items-center gap-1.5 text-xs text-secondaire">
+            <ShieldAlert className="h-4 w-4 text-action-verte" /> Le floutage est optionnel : touchez une photo pour masquer le visage ou une partie du corps.
           </p>
           <div className="grid grid-cols-3 gap-2">
             {medias.map((m) => (
@@ -194,10 +194,10 @@ export function PublierForm({ villes }: { villes: { id: string; nom: string }[] 
                 <span
                   className={
                     "absolute bottom-1 left-1 right-1 rounded-pill px-1.5 py-0.5 text-[10px] " +
-                    (m.floutes > 0 ? "bg-tint-succes text-texte-succes" : "bg-vip/15 text-vip")
+                    (m.floutes > 0 ? "bg-tint-succes text-texte-succes" : "bg-pill-fond text-pill-texte")
                   }
                 >
-                  {m.floutes > 0 ? `${m.floutes} flouté(s)` : "à flouter"}
+                  {m.floutes > 0 ? `${m.floutes} flouté(s)` : "Net · flouter ?"}
                 </span>
               </button>
             ))}
