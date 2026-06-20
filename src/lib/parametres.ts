@@ -1,6 +1,30 @@
 import { db } from "@/lib/db";
+import { TARIFS_MISE_EN_AVANT } from "@/lib/premium";
 
 export const PARRAINAGE_DEFAUT = { taux: 5, dureeMois: 6 };
+
+const CLE_TARIF: Record<string, string> = {
+  URGENT: "tarif_urgent",
+  TOP: "tarif_top",
+  VIP: "tarif_vip",
+  PREMIUM: "tarif_premium",
+};
+
+// Tarifs de mise en avant (par jour) lus depuis la base, avec repli sur les valeurs par défaut.
+export async function getTarifsMiseEnAvant(): Promise<Record<string, number>> {
+  try {
+    const rows = await db.parametre.findMany({ where: { cle: { in: Object.values(CLE_TARIF) } } });
+    const map = Object.fromEntries(rows.map((r: { cle: string; valeur: string }) => [r.cle, r.valeur]));
+    const out: Record<string, number> = {};
+    for (const [niveau, cle] of Object.entries(CLE_TARIF)) {
+      const v = Number(map[cle]);
+      out[niveau] = Number.isFinite(v) && v >= 0 ? v : TARIFS_MISE_EN_AVANT[niveau];
+    }
+    return out;
+  } catch {
+    return { ...TARIFS_MISE_EN_AVANT };
+  }
+}
 
 export async function getParrainageConfig(): Promise<{ taux: number; dureeMois: number }> {
   try {

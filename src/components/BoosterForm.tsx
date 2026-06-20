@@ -20,10 +20,12 @@ export function BoosterForm({
   annonceId,
   titre,
   solde,
+  tarifs = TARIFS_MISE_EN_AVANT,
 }: {
   annonceId: string;
   titre: string;
   solde: number;
+  tarifs?: Record<string, number>;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -31,7 +33,7 @@ export function BoosterForm({
   const [jours, setJours] = useState(3);
   const [enCours, setEnCours] = useState(false);
 
-  const tarif = TARIFS_MISE_EN_AVANT[niveau] ?? 0;
+  const tarif = tarifs[niveau] ?? 0;
   const total = tarif * jours;
   const insuffisant = total > solde;
 
@@ -80,7 +82,7 @@ export function BoosterForm({
                 <span className="block text-xs text-secondaire">{n.desc}</span>
               </span>
               <span className="shrink-0 text-sm font-medium text-principal">
-                {fcfa(TARIFS_MISE_EN_AVANT[n.v] ?? 0)}/j
+                {fcfa(tarifs[n.v] ?? 0)}/j
               </span>
             </button>
           );

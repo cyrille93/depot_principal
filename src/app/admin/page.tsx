@@ -7,8 +7,8 @@ import { validerAnnonce, refuserAnnonce, traiterSignalement, validerVerification
 import { genererMotDePasseTemporaire, rejeterDemandeReset } from "@/app/actions/reset";
 import { contacterUtilisateur } from "@/app/actions/messages";
 import { enregistrerContenuPage } from "@/app/actions/contenus";
-import { enregistrerParrainage, enregistrerLogo, reinitialiserLogo } from "@/app/actions/parametres";
-import { getParrainageConfig } from "@/lib/parametres";
+import { enregistrerParrainage, enregistrerTarifs, enregistrerLogo, reinitialiserLogo } from "@/app/actions/parametres";
+import { getParrainageConfig, getTarifsMiseEnAvant } from "@/lib/parametres";
 import { getTousContenus, CLES_CONTENU } from "@/lib/contenus";
 
 export const dynamic = "force-dynamic";
@@ -180,6 +180,7 @@ export default async function AdminPage() {
   const contenus = CLES_CONTENU.map((cle) => ({ cle, titre: contenusObj[cle].titre, corps: contenusObj[cle].corps }));
 
   const config = await getParrainageConfig();
+  const tarifs = await getTarifsMiseEnAvant();
 
   const demandesRows = await db.demandeReset.findMany({
     where: { statut: "OUVERTE" },
@@ -220,6 +221,8 @@ export default async function AdminPage() {
       reactiverCompte={reactiverCompte}
       enregistrerContenuPage={enregistrerContenuPage}
       enregistrerParrainage={enregistrerParrainage}
+      tarifsInit={tarifs}
+      enregistrerTarifs={enregistrerTarifs}
       enregistrerLogo={enregistrerLogo}
       reinitialiserLogo={reinitialiserLogo}
       demandesReset={demandesReset}

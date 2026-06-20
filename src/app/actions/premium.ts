@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { TARIFS_MISE_EN_AVANT } from "@/lib/premium";
+import { getTarifsMiseEnAvant } from "@/lib/parametres";
 import { creerNotification } from "@/lib/notifications";
 
 const NIVEAUX = ["URGENT", "VIP", "TOP", "PREMIUM"];
@@ -25,7 +26,8 @@ export async function acheterMiseEnAvant(
   const annonce = await db.annonce.findUnique({ where: { id: annonceId }, select: { userId: true } });
   if (!annonce || annonce.userId !== userId) return { error: "Annonce introuvable ou non autorisée." };
 
-  const cout = TARIFS_MISE_EN_AVANT[niveau] * jours;
+  const tarifs = await getTarifsMiseEnAvant();
+  const cout = (tarifs[niveau] ?? TARIFS_MISE_EN_AVANT[niveau]) * jours;
   const porte = await db.portefeuille.findUnique({ where: { userId }, select: { solde: true } });
   if (!porte || porte.solde < cout) {
     return { error: "Solde insuffisant — rechargez votre portefeuille." };

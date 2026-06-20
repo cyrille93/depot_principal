@@ -31,6 +31,22 @@ export async function enregistrerParrainage(
   return { ok: true };
 }
 
+export async function enregistrerTarifs(
+  tarifs: { URGENT: number; TOP: number; VIP: number; PREMIUM: number },
+): Promise<{ ok?: boolean; error?: string }> {
+  if (!(await exigerAdmin())) return { error: "Accès refusé." };
+  const cles: Record<string, string> = { URGENT: "tarif_urgent", TOP: "tarif_top", VIP: "tarif_vip", PREMIUM: "tarif_premium" };
+  for (const [niveau, cle] of Object.entries(cles)) {
+    const v = Math.round(Number(tarifs[niveau as keyof typeof tarifs]));
+    if (!Number.isFinite(v) || v < 0 || v > 1_000_000) return { error: `Tarif ${niveau} invalide.` };
+    await setParam(cle, String(v));
+  }
+  revalidatePath("/admin");
+  revalidatePath("/premium");
+  revalidatePath("/booster");
+  return { ok: true };
+}
+
 export async function enregistrerLogo(dataUrl: string): Promise<{ ok?: boolean; error?: string }> {
   if (!(await exigerAdmin())) return { error: "Accès refusé." };
   if (!/^data:image\/(png|jpeg|webp);base64,/.test(dataUrl)) return { error: "Image invalide." };

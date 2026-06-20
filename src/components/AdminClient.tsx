@@ -63,6 +63,7 @@ export function AdminClient({
   contenus,
   tauxInit,
   dureeInit,
+  tarifsInit,
   validerAnnonce,
   refuserAnnonce,
   traiterSignalement,
@@ -77,6 +78,7 @@ export function AdminClient({
   reactiverCompte,
   enregistrerContenuPage,
   enregistrerParrainage,
+  enregistrerTarifs,
   enregistrerLogo,
   reinitialiserLogo,
   demandesReset: demandesResetInit,
@@ -93,6 +95,7 @@ export function AdminClient({
   contenus: ContenuItem[];
   tauxInit: number;
   dureeInit: number;
+  tarifsInit: Record<string, number>;
   validerAnnonce: (id: string) => Promise<{ ok?: boolean; error?: string }>;
   refuserAnnonce: (id: string) => Promise<{ ok?: boolean; error?: string }>;
   traiterSignalement: (id: string) => Promise<{ ok?: boolean; error?: string }>;
@@ -107,6 +110,7 @@ export function AdminClient({
   reactiverCompte: (id: string) => Promise<{ ok?: boolean; error?: string }>;
   enregistrerContenuPage: (cle: string, titre: string, corps: string) => Promise<{ ok?: boolean; error?: string }>;
   enregistrerParrainage: (taux: number, dureeMois: number) => Promise<{ ok?: boolean; error?: string }>;
+  enregistrerTarifs: (tarifs: { URGENT: number; TOP: number; VIP: number; PREMIUM: number }) => Promise<{ ok?: boolean; error?: string }>;
   enregistrerLogo: (dataUrl: string) => Promise<{ ok?: boolean; error?: string }>;
   reinitialiserLogo: () => Promise<{ ok?: boolean; error?: string }>;
   demandesReset: { id: string; identifiant: string; pseudo: string; quand: string }[];
@@ -127,6 +131,20 @@ export function AdminClient({
   const [taux, setTaux] = useState(tauxInit);
   const [duree, setDuree] = useState(dureeInit);
   const [savingParr, setSavingParr] = useState(false);
+  const [tarifs, setTarifs] = useState({
+    URGENT: tarifsInit.URGENT ?? 1000,
+    TOP: tarifsInit.TOP ?? 1500,
+    VIP: tarifsInit.VIP ?? 2000,
+    PREMIUM: tarifsInit.PREMIUM ?? 3000,
+  });
+  const [savingTarifs, setSavingTarifs] = useState(false);
+
+  const sauverTarifs = async () => {
+    setSavingTarifs(true);
+    const r = await enregistrerTarifs(tarifs);
+    setSavingTarifs(false);
+    toast(r.ok ? "Tarifs enregistrés." : r.error ?? "Erreur.", r.ok ? "success" : "error");
+  };
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [savingLogo, setSavingLogo] = useState(false);
 
@@ -644,6 +662,28 @@ export function AdminClient({
                   </button>
                 </div>
                 <p className="mt-3 text-[11px] text-tertiaire">Appliqué : {taux}% sur chaque recharge des filleuls, pendant {duree} mois. Le nouveau taux s'applique immédiatement ; la durée s'applique aux nouveaux filleuls.</p>
+              </section>
+
+              <section className="rounded-carte border border-bordure bg-carte p-4">
+                <h2 className="text-sm font-medium text-principal">Tarifs des mises en avant (par jour)</h2>
+                <p className="mt-1 text-xs text-secondaire">Prix en FCFA facturés par jour pour chaque niveau de mise en avant. Le nouveau tarif s'applique immédiatement aux prochains achats.</p>
+                <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+                  {(["URGENT", "TOP", "VIP", "PREMIUM"] as const).map((n) => (
+                    <div key={n}>
+                      <label className="mb-1 block text-xs text-secondaire">{n}</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={tarifs[n]}
+                        onChange={(e) => setTarifs((t) => ({ ...t, [n]: Number(e.target.value) }))}
+                        className="w-full rounded-champ border border-bordure bg-carte px-3 py-2 text-sm outline-none focus:border-feuille"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <button onClick={sauverTarifs} disabled={savingTarifs} className="mt-4 rounded-champ bg-feuille px-5 py-2 text-sm font-medium text-sur-vert disabled:opacity-60">
+                  {savingTarifs ? "Enregistrement…" : "Enregistrer les tarifs"}
+                </button>
               </section>
             </div>
           )}

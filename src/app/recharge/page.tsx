@@ -11,7 +11,7 @@ import {
   Gift,
 } from "lucide-react";
 import { fcfa } from "@/lib/mock";
-import { rechargerPortefeuille } from "@/app/actions/portefeuille";
+import { rechargerPortefeuille, initierRechargeCinetPay } from "@/app/actions/portefeuille";
 
 const OPERATEURS = [
   { id: "orange", nom: "Orange Money", couleur: "#FF7900", surCouleur: "#FFFFFF", initiales: "OM" },
@@ -177,12 +177,24 @@ export default function RechargePage() {
       </div>
 
       <button
-        disabled={!valide}
-        onClick={() => setEtape("pending")}
+        disabled={!valide || enCours}
+        onClick={async () => {
+          setErreur(null);
+          setEnCours(true);
+          const opEnum = operateur === "orange" ? "ORANGE_MONEY" : "MTN_MOMO";
+          const res = await initierRechargeCinetPay(montant, opEnum);
+          if (res.url) {
+            window.location.href = res.url;
+            return;
+          }
+          setEnCours(false);
+          setErreur(res.error ?? "Échec de l'initialisation du paiement.");
+        }}
         className="mt-5 w-full rounded-champ bg-feuille py-3 text-sm font-medium text-sur-vert disabled:opacity-50"
       >
-        Recharger {montant > 0 ? fcfa(montant) : ""}
+        {enCours ? "Redirection vers le paiement…" : `Recharger ${montant > 0 ? fcfa(montant) : ""}`}
       </button>
+      {erreur && <p className="mt-3 text-center text-sm text-vip" role="alert">{erreur}</p>}
     </main>
   );
 }
