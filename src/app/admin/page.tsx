@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { fcfa } from "@/lib/mock";
 import { AdminClient } from "@/components/AdminClient";
-import { validerAnnonce, refuserAnnonce, traiterSignalement, validerVerification, refuserVerification, suspendreAnnonce, reactiverAnnonce, supprimerAnnonceAdmin, suspendreCompte, reactiverCompte } from "@/app/actions/moderation";
+import { validerAnnonce, refuserAnnonce, traiterSignalement, validerVerification, refuserVerification, suspendreAnnonce, reactiverAnnonce, supprimerAnnonceAdmin, suspendreCompte, reactiverCompte, supprimerCompte } from "@/app/actions/moderation";
 import { genererMotDePasseTemporaire, rejeterDemandeReset } from "@/app/actions/reset";
 import { contacterUtilisateur } from "@/app/actions/messages";
 import { enregistrerContenuPage } from "@/app/actions/contenus";
@@ -218,6 +218,7 @@ export default async function AdminPage() {
       supprimerAnnonceAdmin={supprimerAnnonceAdmin}
       contacterUtilisateur={contacterUtilisateur}
       suspendreCompte={suspendreCompte}
+      supprimerCompte={supprimerCompte}
       reactiverCompte={reactiverCompte}
       enregistrerContenuPage={enregistrerContenuPage}
       enregistrerParrainage={enregistrerParrainage}

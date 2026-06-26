@@ -76,6 +76,7 @@ export function AdminClient({
   contacterUtilisateur,
   suspendreCompte,
   reactiverCompte,
+  supprimerCompte,
   enregistrerContenuPage,
   enregistrerParrainage,
   enregistrerTarifs,
@@ -108,6 +109,7 @@ export function AdminClient({
   contacterUtilisateur: (id: string) => Promise<{ error?: string }>;
   suspendreCompte: (id: string) => Promise<{ ok?: boolean; error?: string }>;
   reactiverCompte: (id: string) => Promise<{ ok?: boolean; error?: string }>;
+  supprimerCompte: (id: string) => Promise<{ ok?: boolean; error?: string }>;
   enregistrerContenuPage: (cle: string, titre: string, corps: string) => Promise<{ ok?: boolean; error?: string }>;
   enregistrerParrainage: (taux: number, dureeMois: number) => Promise<{ ok?: boolean; error?: string }>;
   enregistrerTarifs: (tarifs: { URGENT: number; TOP: number; VIP: number; PREMIUM: number }) => Promise<{ ok?: boolean; error?: string }>;
@@ -265,6 +267,15 @@ export function AdminClient({
   const basculerCompte = (u: AdminUser) => {
     setUsers((list) => list.map((x) => (x.id === u.id ? { ...x, suspendu: !x.suspendu } : x)));
     startTransition(() => { if (u.suspendu) reactiverCompte(u.id); else suspendreCompte(u.id); });
+  };
+  const [confirmSupprUser, setConfirmSupprUser] = useState<string | null>(null);
+  const supprimerUtilisateur = (id: string) => {
+    setConfirmSupprUser(null);
+    setUsers((list) => list.filter((x) => x.id !== id));
+    startTransition(async () => {
+      const r = await supprimerCompte(id);
+      toast(r.ok ? "Compte supprimé définitivement." : r.error ?? "Erreur.", r.ok ? "success" : "error");
+    });
   };
 
   const AnnoncesSection = (
@@ -490,6 +501,25 @@ export function AdminClient({
               >
                 {u.suspendu ? <Check className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
               </button>
+            )}
+            {!u.estAdmin && (
+              confirmSupprUser === u.id ? (
+                <button
+                  onClick={() => supprimerUtilisateur(u.id)}
+                  className="flex shrink-0 items-center gap-1 rounded-champ bg-vip px-2.5 py-1.5 text-xs font-medium text-white"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Confirmer ?
+                </button>
+              ) : (
+                <button
+                  onClick={() => setConfirmSupprUser(u.id)}
+                  title="Supprimer définitivement"
+                  aria-label="Supprimer définitivement"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-pill bg-pill-fond text-secondaire"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )
             )}
           </div>
         ))}

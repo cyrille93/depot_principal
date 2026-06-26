@@ -103,3 +103,56 @@ export async function reactiverCompte(userId: string): Promise<ModState> {
   revalidatePath("/admin");
   return { ok: true };
 }
+
+// Suppression DÉFINITIVE d'un compte (efface réellement toutes les données liées).
+export async function supprimerCompte(userId: string): Promise<ModState> {
+  const session = await auth();
+  if (session?.user?.role !== "ADMIN") return { error: "Accès réservé aux administrateurs." };
+  if (session.user.id === userId) return { error: "Vous ne pouvez pas supprimer votre propre compte." };
+
+  const u = await db.user.findUnique({ where: { id: userId }, select: { role: true } });
+  if (!u) return { error: "Utilisateur introuvable." };
+  if (u.role === "ADMIN") return { error: "Impossible de supprimer un administrateur." };
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await db.$transaction(async (tx: any) => {
+      // Récupère les identifiants liés pour effacer les tables sans cascade
+      const recharges = await tx.recharge.findMany({ where: { userId }, select: { id: true } });
+      const parrainages = await tx.parrainage.findMany({
+        where: { OR: [{ parrainId: userId }, { filleulId: userId }] },
+        select: { id: true },
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rechargeIds = recharges.map((r: any) => r.id);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const parrainageIds = parrainages.map((p: any) => p.id);
+
+      // 1) Commissions (liées aux recharges ou aux parrainages de l'utilisateur)
+      await tx.commission.deleteMany({
+        where: { OR: [{ rechargeId: { in: rechargeIds } }, { parrainageId: { in: parrainageIds } }] },
+      });
+      // 2) Recharges de l'utilisateur
+      await tx.recharge.deleteMany({ where: { userId } });
+      // 3) Parrainages où il est parrain ou filleul
+      await tx.parrainage.deleteMany({ where: { OR: [{ parrainId: userId }, { filleulId: userId }] } });
+      // 4) Transferts internes émis/reçus
+      await tx.transfertInterne.deleteMany({ where: { OR: [{ emetteurId: userId }, { destinataireId: userId }] } });
+      // 5) Messages envoyés
+      await tx.message.deleteMany({ where: { expediteurId: userId } });
+      // 6) Avis rédigés
+      await tx.avis.deleteMany({ where: { auteurId: userId } });
+      // 7) Signalements émis
+      await tx.signalement.deleteMany({ where: { auteurId: userId } });
+
+      // 8) Le compte : cascade sur profil, annonces, favoris, portefeuille,
+      //    vérifications, options, blocages, notifications, conversations, demandes…
+      await tx.user.delete({ where: { id: userId } });
+    });
+  } catch {
+    return { error: "Échec de la suppression (des données liées subsistent)." };
+  }
+
+  revalidatePath("/admin");
+  return { ok: true };
+}
