@@ -15,6 +15,7 @@ import {
   FileCheck,
   ScanFace,
   EyeOff,
+  Eye,
   MapPin,
   Check,
 } from "lucide-react";
@@ -109,6 +110,11 @@ function CarteAction({ p }: { p: ProfilDetail }) {
         ) : (
           <span className="text-base font-medium text-principal">Prix à convenir</span>
         )}
+      </div>
+
+      <div className="mt-2 flex items-center gap-4 text-xs text-tertiaire">
+        <span className="flex items-center gap-1"><Eye className="h-4 w-4" /> {(p.nbVues ?? 0).toLocaleString("fr-FR")} vues</span>
+        <span className="flex items-center gap-1"><Heart className="h-4 w-4" /> {(p.nbFavoris ?? 0).toLocaleString("fr-FR")} favoris</span>
       </div>
 
       <span

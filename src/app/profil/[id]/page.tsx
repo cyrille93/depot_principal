@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
+import { db } from "@/lib/db";
 import { getAnnonceDetail, getContexteAvis } from "@/lib/annonces";
 import { FicheProfil } from "@/components/FicheProfil";
 import { JsonLd } from "@/components/JsonLd";
@@ -25,6 +26,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
+  // +1 vue à chaque ouverture de la fiche
+  await db.annonce.update({ where: { id }, data: { nbVues: { increment: 1 } } }).catch(() => {});
   const [profil, ctx] = await Promise.all([
     getAnnonceDetail(id),
     getContexteAvis(id, session?.user?.id),

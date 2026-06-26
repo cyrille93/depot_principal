@@ -48,7 +48,7 @@ export type AdminStats = {
 export type AnnonceAttente = { id: string; titre: string; pseudo: string; ville: string; cat: string };
 export type SignalementItem = { id: string; cible: string; motif: string; annonceId: string | null };
 export type VerifItem = { id: string; type: string; pseudo: string; image: string };
-export type AdminUser = { id: string; pseudo: string; identifiant: string; role: string; estAdmin: boolean; suspendu: boolean; niveau: number; parrainPar: string | null };
+export type AdminUser = { id: string; pseudo: string; identifiant: string; role: string; estAdmin: boolean; suspendu: boolean; niveau: number; parrainPar: string | null; enLigne: boolean; vuLe: string | null };
 export type ParrItem = { id: string; parrain: string; filleul: string; date: string; statut: string; total: string; nb: number };
 export type ContenuItem = { cle: string; titre: string; corps: string };
 
@@ -475,6 +475,11 @@ export function AdminClient({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <span className="truncate text-sm font-medium text-principal">{u.pseudo}</span>
+                {u.enLigne && (
+                  <span className="flex shrink-0 items-center gap-1 rounded-pill bg-tint-succes px-2 py-0.5 text-[10px] font-medium text-texte-succes">
+                    <span className="h-1.5 w-1.5 rounded-pill bg-feuille-clair" /> En ligne
+                  </span>
+                )}
                 <span className="shrink-0 rounded-pill bg-pill-fond px-2 py-0.5 text-[10px] text-pill-texte">{u.role}</span>
                 {u.niveau > 0 && <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-feuille" />}
                 {u.suspendu && (
@@ -483,7 +488,10 @@ export function AdminClient({
                   </span>
                 )}
               </div>
-              <div className="truncate text-[11px] text-secondaire">{u.identifiant}</div>
+              <div className="truncate text-[11px] text-secondaire">
+                {u.identifiant}
+                {!u.enLigne && u.vuLe && <span className="text-tertiaire"> · vu(e) le {u.vuLe}</span>}
+              </div>
               {u.parrainPar && (
                 <div className="mt-0.5 inline-flex items-center gap-1 rounded-pill bg-pill-fond px-2 py-0.5 text-[10px] text-pill-texte">
                   <Gift className="h-3 w-3" /> Filleul de {u.parrainPar}

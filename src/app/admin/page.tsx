@@ -33,6 +33,7 @@ type UserRow = {
   role: string;
   statut: string;
   niveauVerification: number;
+  derniereActivite: Date | null;
   profil: { pseudo: string } | null;
   parrainageRecu: { parrain: { email: string | null; telephone: string | null; profil: { pseudo: string } | null } } | null;
 };
@@ -67,6 +68,7 @@ export default async function AdminPage() {
       take: 300,
       select: {
         id: true, email: true, telephone: true, role: true, statut: true, niveauVerification: true,
+        derniereActivite: true,
         profil: { select: { pseudo: true } },
         parrainageRecu: { select: { parrain: { select: { email: true, telephone: true, profil: { select: { pseudo: true } } } } } },
       },
@@ -146,6 +148,7 @@ export default async function AdminPage() {
   const ROLEL: Record<string, string> = { CLIENT: "Client", PRO: "Annonceur", ADMIN: "Admin" };
   const utilisateurs = usersRows.map((u: UserRow) => {
     const p = u.parrainageRecu?.parrain;
+    const enLigneU = !!u.derniereActivite && u.derniereActivite >= seuilEnLigne;
     return {
       id: u.id,
       pseudo: u.profil?.pseudo ?? u.email?.split("@")[0] ?? u.telephone ?? "Utilisateur",
@@ -155,6 +158,10 @@ export default async function AdminPage() {
       suspendu: u.statut === "SUSPENDU",
       niveau: u.niveauVerification,
       parrainPar: p ? (p.profil?.pseudo ?? p.email?.split("@")[0] ?? p.telephone ?? null) : null,
+      enLigne: enLigneU,
+      vuLe: u.derniereActivite
+        ? u.derniereActivite.toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+        : null,
     };
   });
 

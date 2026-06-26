@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { EyeOff, Star, Heart, BadgeCheck, MapPin } from "lucide-react";
+import { Eye, EyeOff, Star, Heart, BadgeCheck, MapPin } from "lucide-react";
 import type { ProfilFictif } from "@/lib/mock";
 import { toggleFavori } from "@/app/actions/favoris";
 import { useToast } from "@/components/Toast";
@@ -96,6 +96,11 @@ export function ProfilCard({ profil }: { profil: ProfilFictif }) {
         <div className="mt-1 flex items-center gap-1 text-xs text-secondaire">
           <MapPin className="h-3.5 w-3.5 text-action-verte" strokeWidth={1.75} />
           <span>{profil.ville}</span>
+        </div>
+
+        <div className="mt-1.5 flex items-center gap-3 text-[11px] text-tertiaire">
+          <span className="flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> {(profil.nbVues ?? 0).toLocaleString("fr-FR")}</span>
+          <span className="flex items-center gap-1"><Heart className="h-3.5 w-3.5" /> {(profil.nbFavoris ?? 0).toLocaleString("fr-FR")}</span>
         </div>
 
         <div className="mt-3 flex items-center justify-between">

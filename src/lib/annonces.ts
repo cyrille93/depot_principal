@@ -53,9 +53,11 @@ function versCarte(a: {
   estBoostee: boolean;
   boostExpire?: Date | null;
   miseEnAvant?: string;
+  nbVues?: number;
   medias?: { url: string; ordre: number }[];
   ville: { nom: string };
   user: { niveauVerification: number; profil: { pseudo: string; noteMoyenne: number; nombreAvis: number; disponible?: boolean } | null };
+  _count?: { favoris: number };
 }): ProfilFictif {
   const p = a.user.profil;
   // La mise en avant n'est valable que si elle n'est pas expirée (0 à 5 jours) — sinon standard
@@ -76,6 +78,8 @@ function versCarte(a: {
     badge,
     enLigne: false,
     verifie: a.user.niveauVerification >= 1,
+    nbVues: a.nbVues ?? 0,
+    nbFavoris: a._count?.favoris ?? 0,
     photo,
   };
 }
@@ -114,7 +118,7 @@ export async function listerAnnonces(filtres?: FiltresAnnonces, userId?: string)
 
   const annonces = await db.annonce.findMany({
     where,
-    include: { ville: true, user: { include: { profil: true } }, medias: { select: { url: true, ordre: true } } },
+    include: { ville: true, user: { include: { profil: true } }, medias: { select: { url: true, ordre: true } }, _count: { select: { favoris: true } } },
   });
 
   const now = Date.now();
@@ -177,6 +181,7 @@ function chargerDetail(id: string) {
       medias: true,
       user: { include: { profil: true } },
       avis: { include: { auteur: { include: { profil: true } } }, orderBy: { createdAt: "desc" } },
+      _count: { select: { favoris: true } },
     },
   });
 }

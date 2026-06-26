@@ -17,6 +17,8 @@ export type ProfilFictif = {
   badge: Badge;
   enLigne: boolean;
   verifie: boolean;
+  nbVues?: number;
+  nbFavoris?: number;
   favori?: boolean;
   photo?: string;
 };
@@ -101,6 +103,8 @@ export type ProfilDetail = ProfilFictif & {
   criteres: { label: string; note: number }[];
   verif: { telephone: boolean; identite: boolean; selfie: boolean };
   telephoneContact?: string | null;
+  nbVues?: number;
+  nbFavoris?: number;
   avisListe: Avis[];
 };
 

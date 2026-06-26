@@ -238,6 +238,7 @@ model Annonce {
   boostDebut  DateTime?
   boostExpire DateTime?
   boostMontant Int             @default(0)
+  nbVues      Int              @default(0)
   miseEnAvant NiveauMiseEnAvant @default(STANDARD)
   user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId      String
