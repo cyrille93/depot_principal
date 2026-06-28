@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Annonce" ADD COLUMN     "nbVues" INTEGER NOT NULL DEFAULT 0;
