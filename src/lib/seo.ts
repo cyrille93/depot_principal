@@ -3,7 +3,9 @@
 export const MARQUE_SEO = "Rose Annonce";
 
 // URL publique du site (à définir en production via NEXT_PUBLIC_SITE_URL)
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+// Fallback de prod par sécurité : on n'expose jamais localhost en ligne.
+const URL_DEFAUT = process.env.NODE_ENV === "production" ? "https://roseannonce.com" : "http://localhost:3000";
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? URL_DEFAUT).replace(/\/$/, "");
 
 export type CategorieSeo = {
   slug: string;
