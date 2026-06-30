@@ -8,7 +8,7 @@ import { recomputeNiveau } from "@/lib/verification";
 import { paire } from "@/lib/messages";
 
 // Tarif de la vérification de compte (badge vérifié) — réglé manuellement via le chat admin.
-export const TARIF_VERIFICATION = 10000;
+const TARIF_VERIFICATION = 10000;
 
 export type VerifState = { ok?: boolean; error?: string; code?: string };
 
