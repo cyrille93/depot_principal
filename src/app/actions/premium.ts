@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { TARIFS_MISE_EN_AVANT } from "@/lib/premium";
-import { getTarifsMiseEnAvant } from "@/lib/parametres";
+import { getTarifsMiseEnAvant, forfaitsGratuits } from "@/lib/parametres";
 import { creerNotification } from "@/lib/notifications";
 
 const NIVEAUX = ["URGENT", "VIP", "TOP", "PREMIUM"];
@@ -26,11 +26,16 @@ export async function acheterMiseEnAvant(
   const annonce = await db.annonce.findUnique({ where: { id: annonceId }, select: { userId: true } });
   if (!annonce || annonce.userId !== userId) return { error: "Annonce introuvable ou non autorisée." };
 
+  const gratuit = await forfaitsGratuits();
   const tarifs = await getTarifsMiseEnAvant();
-  const cout = (tarifs[niveau] ?? TARIFS_MISE_EN_AVANT[niveau]) * jours;
-  const porte = await db.portefeuille.findUnique({ where: { userId }, select: { solde: true } });
-  if (!porte || porte.solde < cout) {
-    return { error: "Solde insuffisant — rechargez votre portefeuille." };
+  const cout = gratuit ? 0 : (tarifs[niveau] ?? TARIFS_MISE_EN_AVANT[niveau]) * jours;
+
+  // Pendant la fenêtre de lancement (forfaits offerts), aucun débit ni contrôle de solde.
+  if (!gratuit) {
+    const porte = await db.portefeuille.findUnique({ where: { userId }, select: { solde: true } });
+    if (!porte || porte.solde < cout) {
+      return { error: "Solde insuffisant." };
+    }
   }
 
   const debut = new Date();
@@ -40,15 +45,17 @@ export async function acheterMiseEnAvant(
   await db.$transaction(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async (tx: any) => {
-      await tx.portefeuille.update({
-        where: { userId },
-        data: {
-          solde: { decrement: cout },
-          mouvements: {
-            create: { type: "ACHAT_PREMIUM", montant: -cout, libelle: `Mise en avant ${niveau} (${jours} j)` },
+      if (cout > 0) {
+        await tx.portefeuille.update({
+          where: { userId },
+          data: {
+            solde: { decrement: cout },
+            mouvements: {
+              create: { type: "ACHAT_PREMIUM", montant: -cout, libelle: `Mise en avant ${niveau} (${jours} j)` },
+            },
           },
-        },
-      });
+        });
+      }
       await tx.annonce.update({
         where: { id: annonceId },
         data: { miseEnAvant: niveau, estBoostee: true, boostDebut: debut, boostExpire: expire, boostMontant: cout },

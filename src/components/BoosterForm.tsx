@@ -21,11 +21,13 @@ export function BoosterForm({
   titre,
   solde,
   tarifs = TARIFS_MISE_EN_AVANT,
+  gratuit = false,
 }: {
   annonceId: string;
   titre: string;
   solde: number;
   tarifs?: Record<string, number>;
+  gratuit?: boolean;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -34,8 +36,8 @@ export function BoosterForm({
   const [enCours, setEnCours] = useState(false);
 
   const tarif = tarifs[niveau] ?? 0;
-  const total = tarif * jours;
-  const insuffisant = total > solde;
+  const total = gratuit ? 0 : tarif * jours;
+  const insuffisant = !gratuit && total > solde;
 
   const confirmer = async () => {
     setEnCours(true);
@@ -61,6 +63,12 @@ export function BoosterForm({
         <Wallet className="h-4 w-4 text-action-verte" /> Solde : <b className="text-principal">{fcfa(solde)}</b>
       </p>
 
+      {gratuit && (
+        <div className="mt-3 rounded-carte bg-tint-succes px-4 py-2.5 text-[13px] text-texte-succes">
+          🎉 Lancement : toutes les mises en avant sont <b>offertes</b>. Profitez-en pour booster votre annonce gratuitement.
+        </div>
+      )}
+
       {/* Niveau */}
       <div className="mt-5 space-y-2">
         {NIVEAUX.map((n) => {
@@ -82,7 +90,7 @@ export function BoosterForm({
                 <span className="block text-xs text-secondaire">{n.desc}</span>
               </span>
               <span className="shrink-0 text-sm font-medium text-principal">
-                {fcfa(tarifs[n.v] ?? 0)}/j
+                {gratuit ? "Offert" : `${fcfa(tarifs[n.v] ?? 0)}/j`}
               </span>
             </button>
           );
@@ -111,7 +119,7 @@ export function BoosterForm({
       {/* Total */}
       <div className="mt-5 flex items-center justify-between rounded-carte border border-bordure bg-carte p-4">
         <span className="text-sm text-secondaire">Total</span>
-        <span className="text-lg font-medium text-principal">{fcfa(total)}</span>
+        <span className="text-lg font-medium text-principal">{gratuit ? "Offert (lancement)" : fcfa(total)}</span>
       </div>
 
       {insuffisant ? (
@@ -119,9 +127,9 @@ export function BoosterForm({
           <p className="mt-3 flex items-center gap-1.5 text-sm text-vip">
             <CircleAlert className="h-4 w-4" /> Solde insuffisant.
           </p>
-          <Link href="/recharge" className="mt-3 block w-full rounded-champ bg-feuille py-3 text-center text-sm font-medium text-sur-vert">
-            Recharger mon portefeuille
-          </Link>
+          <p className="mt-2 text-center text-[12px] text-secondaire">
+            Le rechargement en ligne est momentanément indisponible.
+          </p>
         </>
       ) : (
         <button
@@ -129,7 +137,7 @@ export function BoosterForm({
           disabled={enCours}
           className="mt-5 flex w-full items-center justify-center gap-2 rounded-champ bg-feuille py-3 text-sm font-medium text-sur-vert disabled:opacity-60"
         >
-          <Wallet className="h-4 w-4" /> {enCours ? "Activation…" : `Payer ${fcfa(total)}`}
+          <Wallet className="h-4 w-4" /> {enCours ? "Activation…" : gratuit ? "Activer gratuitement" : `Payer ${fcfa(total)}`}
         </button>
       )}
 

@@ -51,3 +51,16 @@ export async function getParametre(cle: string): Promise<string | null> {
     return null;
   }
 }
+
+// --- Lancement : forfaits premium offerts ---
+// Pendant la phase de lancement, tous les forfaits (mise en avant, boost…) sont
+// gratuits jusqu'à cette date. Modifiable par l'admin via le paramètre
+// "forfaits_gratuits_jusqu_au" (format AAAA-MM-JJ).
+export const FORFAITS_GRATUITS_DEFAUT = "2026-09-30";
+
+export async function forfaitsGratuits(): Promise<boolean> {
+  const v = (await getParametre("forfaits_gratuits_jusqu_au")) ?? FORFAITS_GRATUITS_DEFAUT;
+  const fin = new Date(`${v}T23:59:59`);
+  if (Number.isNaN(fin.getTime())) return false;
+  return new Date() <= fin;
+}

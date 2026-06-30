@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   ChevronLeft,
-  Plus,
   Send,
   Users,
   Gift,
@@ -77,10 +76,7 @@ export function PortefeuilleClient({ data: P }: { data: PortefeuilleData }) {
         <span className="text-sm text-sur-foret-mute">Solde disponible</span>
         <div className="mt-1 text-3xl font-medium text-sur-foret">{fcfa(P.solde)}</div>
         <div className="mt-4 flex gap-2">
-          <Link href="/recharge" className="flex flex-1 items-center justify-center gap-2 rounded-champ bg-feuille py-2.5 text-sm font-medium text-sur-vert">
-            <Plus className="h-4 w-4" /> Recharger
-          </Link>
-          <Link href="/transfert" className="flex flex-1 items-center justify-center gap-2 rounded-champ border border-sur-foret-mute/30 py-2.5 text-sm font-medium text-sur-foret">
+          <Link href="/transfert" className="flex flex-1 items-center justify-center gap-2 rounded-champ bg-feuille py-2.5 text-sm font-medium text-sur-vert">
             <Send className="h-4 w-4" /> Transférer
           </Link>
         </div>

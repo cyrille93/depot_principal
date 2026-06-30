@@ -1,9 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { recomputeNiveau } from "@/lib/verification";
+import { paire } from "@/lib/messages";
+
+// Tarif de la vérification de compte (badge vérifié) — réglé manuellement via le chat admin.
+export const TARIF_VERIFICATION = 10000;
 
 export type VerifState = { ok?: boolean; error?: string; code?: string };
 
@@ -56,4 +61,33 @@ export async function soumettrePiece(
   revalidatePath("/verification");
   revalidatePath("/admin");
   return { ok: true };
+}
+
+// --- Vérification de compte payante (10 000 FCFA) réglée via le chat admin ---
+// Ouvre (ou retrouve) une conversation directe avec l'administrateur, en y
+// déposant un premier message d'intention, puis redirige vers la messagerie.
+export async function ouvrirChatVerification(): Promise<VerifState> {
+  const session = await auth();
+  if (!session?.user) return { error: "Connectez-vous." };
+  const moi = session.user.id;
+
+  const admin = await db.user.findFirst({ where: { role: "ADMIN" }, select: { id: true } });
+  if (!admin) return { error: "Aucun administrateur disponible pour le moment." };
+  if (admin.id === moi) return { error: "Vous êtes administrateur." };
+
+  const [userAId, userBId] = paire(moi, admin.id);
+  let conv = await db.conversation.findFirst({ where: { userAId, userBId, annonceId: null } });
+  if (!conv) {
+    conv = await db.conversation.create({ data: { userAId, userBId, annonceId: null } });
+    await db.message.create({
+      data: {
+        conversationId: conv.id,
+        expediteurId: moi,
+        contenu: `Bonjour, je souhaite faire vérifier mon compte (badge vérifié). J'ai bien noté le tarif de ${TARIF_VERIFICATION.toLocaleString("fr-FR")} FCFA.`,
+      },
+    });
+    await db.conversation.update({ where: { id: conv.id }, data: { dernierAt: new Date() } });
+  }
+
+  redirect(`/messages/${conv.id}`);
 }

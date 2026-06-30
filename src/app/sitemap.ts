@@ -11,7 +11,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     where: { actif: true },
     select: { id: true, slug: true },
   });
-  const slugParVilleId = new Map<string, string>(villes.map((v) => [v.id, v.slug]));
+  const slugParVilleId = new Map<string, string>(villes.map((v: { id: string; slug: string }) => [v.id, v.slug]));
 
   // Catégorie (valeur enum en base) -> slug utilisé dans l'URL.
   const slugParCategorie = new Map<string, string>(CATEGORIES_SEO.map((c) => [c.enum as string, c.slug]));

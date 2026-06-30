@@ -95,9 +95,9 @@ export default function PremiumPage() {
             <p className="mt-3 flex items-center gap-1.5 text-sm text-vip">
               <CircleAlert className="h-4 w-4" /> Solde insuffisant.
             </p>
-            <Link href="/recharge" className="mt-3 block w-full rounded-champ bg-feuille py-3 text-center text-sm font-medium text-sur-vert">
-              Recharger mon portefeuille
-            </Link>
+            <p className="mt-2 text-center text-[12px] text-secondaire">
+              Le rechargement en ligne est momentanément indisponible.
+            </p>
           </>
         ) : (
           <button

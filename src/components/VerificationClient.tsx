@@ -2,8 +2,8 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ShieldCheck, Phone, IdCard, ScanFace, Check, Clock, Upload } from "lucide-react";
-import { envoyerCodeTelephone, confirmerTelephone, soumettrePiece } from "@/app/actions/verification";
+import { ChevronLeft, ShieldCheck, Phone, IdCard, ScanFace, Check, Clock, Upload, MessageCircle, BadgeCheck } from "lucide-react";
+import { envoyerCodeTelephone, confirmerTelephone, soumettrePiece, ouvrirChatVerification } from "@/app/actions/verification";
 import { useToast } from "@/components/Toast";
 import type { StatutVerif } from "@/lib/verification";
 
@@ -55,6 +55,18 @@ export function VerificationClient({ statut }: { statut: StatutVerif }) {
   const [attenteSelfie, setAttenteSelfie] = useState(statut.attenteSelfie);
   const refId = useRef<HTMLInputElement>(null);
   const refSelfie = useRef<HTMLInputElement>(null);
+
+  // Chat admin (vérification payante)
+  const [busyChat, setBusyChat] = useState(false);
+  const ouvrirChat = async () => {
+    setBusyChat(true);
+    const res = await ouvrirChatVerification();
+    // En cas de succès, l'action redirige vers la messagerie (pas de retour ici).
+    if (res?.error) {
+      setBusyChat(false);
+      toast(res.error, "error");
+    }
+  };
 
   const recevoirCode = async () => {
     setBusy(true);
@@ -109,6 +121,27 @@ export function VerificationClient({ statut }: { statut: StatutVerif }) {
         Un profil vérifié inspire confiance et ressort mieux dans les résultats.
         {niveau > 0 && <span className="ml-1 text-texte-succes">Niveau {niveau}/3.</span>}
       </p>
+
+      {/* Vérification de compte payante via le chat admin */}
+      <section className="mt-5 rounded-carte border border-feuille bg-tint-succes p-4">
+        <div className="flex items-center justify-between">
+          <span className="flex items-center gap-2 text-sm font-medium text-texte-succes">
+            <BadgeCheck className="h-4 w-4" /> Badge vérifié
+          </span>
+          <span className="rounded-pill bg-carte px-2.5 py-1 text-[12px] font-medium text-principal">10 000 FCFA</span>
+        </div>
+        <p className="mt-2 text-[13px] text-texte-succes">
+          La vérification du compte (pièce d'identité + selfie) est payante. Pour la régler et finaliser,
+          ouvrez une discussion avec l'administration : vous y enverrez vos documents et conviendrez du paiement.
+        </p>
+        <button
+          onClick={ouvrirChat}
+          disabled={busyChat}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-champ bg-feuille py-2.5 text-sm font-medium text-sur-vert disabled:opacity-60"
+        >
+          <MessageCircle className="h-4 w-4" /> {busyChat ? "Ouverture…" : "Ouvrir le chat admin"}
+        </button>
+      </section>
 
       {/* Téléphone */}
       <section className="mt-5 rounded-carte border border-bordure bg-carte p-4">

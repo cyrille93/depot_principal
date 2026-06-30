@@ -5,11 +5,15 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { creerNotification } from "@/lib/notifications";
 import { getParrainageConfig } from "@/lib/parametres";
-import { creerPaiement } from "@/lib/cinetpay";
-import { SITE_URL } from "@/lib/seo";
 
 // Montant minimum d'une recharge
 const MONTANT_MIN = 500;
+
+// NOTE : la recharge en ligne (CinetPay) a été retirée pour la phase de lancement.
+// `rechargerPortefeuille` ci-dessous (recharge simulée) reste dans le code mais
+// n'est plus reliée à aucune interface — donc non appelable côté client. Elle
+// conserve la logique de commissions de parrainage pour le jour où les paiements
+// en ligne seront rebranchés.
 
 export type RechargeState = { ok?: boolean; error?: string; nouveauSolde?: number };
 
@@ -101,40 +105,6 @@ export async function rechargerPortefeuille(
 
   revalidatePath("/portefeuille");
   return { ok: true, nouveauSolde };
-}
-
-// Initie une recharge via CinetPay (Mobile Money réel). Renvoie l'URL de paiement.
-export async function initierRechargeCinetPay(
-  montant: number,
-  operateur: "ORANGE_MONEY" | "MTN_MOMO",
-): Promise<{ url?: string; error?: string }> {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Connectez-vous pour recharger." };
-  if (!Number.isFinite(montant) || montant < MONTANT_MIN) return { error: `Montant minimum : ${MONTANT_MIN} FCFA.` };
-  const m = Math.round(montant / 5) * 5; // CinetPay exige un montant multiple de 5
-
-  const u = await db.user.findUnique({
-    where: { id: session.user.id },
-    select: { telephone: true, profil: { select: { pseudo: true } } },
-  });
-
-  const transactionId = "RA-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
-  await db.recharge.create({
-    data: { userId: session.user.id, montant: m, operateur, statut: "EN_ATTENTE", refOperateur: transactionId },
-  });
-
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? SITE_URL;
-  const r = await creerPaiement({
-    transactionId,
-    montant: m,
-    description: "Recharge portefeuille Rose Annonce",
-    notifyUrl: `${base}/api/cinetpay/notify`,
-    returnUrl: `${base}/recharge/retour?tx=${transactionId}`,
-    customerName: u?.profil?.pseudo ?? "Client",
-    customerPhone: u?.telephone ?? "",
-  });
-  if (!r.ok || !r.url) return { error: r.error ?? "Échec de l'initialisation du paiement." };
-  return { url: r.url };
 }
 
 const MIN_TRANSFERT = 500;

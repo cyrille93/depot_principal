@@ -2,7 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { BoosterForm } from "@/components/BoosterForm";
-import { getTarifsMiseEnAvant } from "@/lib/parametres";
+import { getTarifsMiseEnAvant, forfaitsGratuits } from "@/lib/parametres";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +27,7 @@ export default async function BoosterPage({
   });
 
   const tarifs = await getTarifsMiseEnAvant();
+  const gratuit = await forfaitsGratuits();
 
-  return <BoosterForm annonceId={annonce.id} titre={annonce.titre} solde={porte?.solde ?? 0} tarifs={tarifs} />;
+  return <BoosterForm annonceId={annonce.id} titre={annonce.titre} solde={porte?.solde ?? 0} tarifs={tarifs} gratuit={gratuit} />;
 }
