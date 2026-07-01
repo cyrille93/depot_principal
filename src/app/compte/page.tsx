@@ -81,6 +81,29 @@ export default async function ComptePage() {
         </div>
       </section>
 
+      {/* Accueil annonceur : incitation à publier tant qu'aucune annonce n'existe */}
+      {role === "PRO" && mesAnnonces.length === 0 && (
+        <section className="mt-4 rounded-carte bg-foret p-5 text-sur-foret">
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 flex-none items-center justify-center rounded-pill bg-feuille text-sur-vert">
+              <Rocket className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <h2 className="text-base font-medium">Lancez-vous : publiez votre première annonce</h2>
+              <p className="mt-1 text-sm text-sur-foret-mute">
+                Votre compte est prêt. Créez une annonce maintenant pour être visible auprès des clients dès aujourd'hui — c'est gratuit pendant le lancement.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/publier"
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-champ bg-feuille py-3 text-sm font-medium text-sur-vert"
+          >
+            <PlusCircle className="h-4 w-4" /> Publier ma première annonce
+          </Link>
+        </section>
+      )}
+
       {/* Raccourcis */}
       <div className="mt-4 grid grid-cols-2 gap-3">
         {role === "PRO" && (

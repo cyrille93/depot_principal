@@ -86,8 +86,10 @@ export async function inscription(
     });
   }
 
-  // Connecte directement après l'inscription → entre directement dans le compte.
-  await signIn("credentials", { identifiant: emailNorm, password, redirectTo: "/compte" });
+  // Connecte directement après l'inscription.
+  // Client → accueil (il vient chercher) ; Annonceur/Admin → son compte (où on l'invite à publier).
+  const cible = role === "CLIENT" ? "/" : "/compte";
+  await signIn("credentials", { identifiant: emailNorm, password, redirectTo: cible });
   return {};
 }
 

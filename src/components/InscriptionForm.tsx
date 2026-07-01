@@ -11,6 +11,7 @@ const initial: AuthState = {};
 export function InscriptionForm({ villes }: { villes: { id: string; nom: string }[] }) {
   const [state, action, pending] = useActionState(inscription, initial);
   const [showPwd, setShowPwd] = useState(false);
+  const [aCode, setACode] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
@@ -117,17 +118,35 @@ export function InscriptionForm({ villes }: { villes: { id: string; nom: string 
           </div>
 
           <div>
-            <label className="mb-1 block text-sm text-principal">
-              Code de parrainage <span className="text-tertiaire">(optionnel)</span>
-            </label>
-            <input
-              name="codeParrain"
-              type="text"
-              autoComplete="off"
-              className="w-full rounded-champ border border-bordure bg-carte px-3 py-2.5 text-sm text-principal outline-none focus:border-feuille"
-              placeholder="CONF-XXXXXX"
-            />
-            <p className="mt-1 text-[11px] text-tertiaire">Le code d'un compte annonceur qui vous a invité.</p>
+            <span className="mb-1 block text-sm text-principal">Avez-vous un code de parrainage ?</span>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setACode(false)}
+                className={`rounded-champ border px-3 py-2.5 text-sm transition ${!aCode ? "border-feuille bg-tint-succes text-principal" : "border-bordure text-secondaire"}`}
+              >
+                Non
+              </button>
+              <button
+                type="button"
+                onClick={() => setACode(true)}
+                className={`rounded-champ border px-3 py-2.5 text-sm transition ${aCode ? "border-feuille bg-tint-succes text-principal" : "border-bordure text-secondaire"}`}
+              >
+                Oui
+              </button>
+            </div>
+            {aCode && (
+              <div className="mt-3">
+                <input
+                  name="codeParrain"
+                  type="text"
+                  autoComplete="off"
+                  className="w-full rounded-champ border border-bordure bg-carte px-3 py-2.5 text-sm text-principal outline-none focus:border-feuille"
+                  placeholder="CONF-XXXXXX"
+                />
+                <p className="mt-1 text-[11px] text-tertiaire">Le code d'un compte annonceur qui vous a invité.</p>
+              </div>
+            )}
           </div>
 
           <p className="text-[11px] text-tertiaire"><span className="text-vip">*</span> Champs obligatoires</p>
