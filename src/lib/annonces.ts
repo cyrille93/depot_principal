@@ -87,16 +87,21 @@ function versCarte(a: {
 const CATS_VALIDES = ["RENCONTRE", "MASSAGE", "SPA", "PRODUITS"];
 const TIER_MAP: Record<string, string> = { urgent: "URGENT", vip: "VIP", top: "TOP", premium: "PREMIUM" };
 
-export type FiltresAnnonces = { villeId?: string; service?: string; compte?: string; q?: string; tier?: string; tri?: string };
+export type FiltresAnnonces = { villeId?: string; service?: string; compte?: string; q?: string; tier?: string; tri?: string; page?: number };
 
-export async function listerAnnonces(filtres?: FiltresAnnonces, userId?: string): Promise<ProfilFictif[]> {
+// Nombre d'annonces affichées par page.
+export const ANNONCES_PAR_PAGE = 12;
+
+// Construit la clause WHERE commune à la liste et au comptage.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function construireWhere(filtres?: FiltresAnnonces): any {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = { statut: "ACTIVE" };
   if (filtres?.villeId) where.villeId = filtres.villeId;
   if (filtres?.service && CATS_VALIDES.includes(filtres.service)) where.categorie = filtres.service;
   if (filtres?.compte === "verifie") where.user = { niveauVerification: { gte: 1 } };
 
-  // Filtres de mise en avant (Urgent / VIP / TOP / Premium), uniquement si non expirés
+  // Filtre par marque (Urgent / VIP / TOP / Premium), uniquement si non expirée.
   if (filtres?.tier) {
     const niveaux = filtres.tier
       .split(",")
@@ -115,38 +120,37 @@ export async function listerAnnonces(filtres?: FiltresAnnonces, userId?: string)
       { description: { contains: q, mode: "insensitive" } },
     ];
   }
+  return where;
+}
+
+// Total d'annonces correspondant aux filtres (sert au calcul du nombre de pages).
+export async function compterAnnonces(filtres?: FiltresAnnonces): Promise<number> {
+  return db.annonce.count({ where: construireWhere(filtres) });
+}
+
+export async function listerAnnonces(filtres?: FiltresAnnonces, userId?: string): Promise<ProfilFictif[]> {
+  const where = construireWhere(filtres);
+  const page = Math.max(1, filtres?.page ?? 1);
+  const tri = filtres?.tri;
+
+  // Tri secondaire (à marque égale) : note, disponibilité, ou score de réputation par défaut.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const secondaire: any[] =
+    tri === "note"
+      ? [{ user: { profil: { noteMoyenne: "desc" } } }]
+      : tri === "dispo"
+      ? [{ user: { profil: { disponible: "desc" } } }]
+      : [{ user: { profil: { scoreReputation: "desc" } } }];
 
   const annonces = await db.annonce.findMany({
     where,
     include: { ville: true, user: { include: { profil: true } }, medias: { select: { url: true, ordre: true } }, _count: { select: { favoris: true } } },
-  });
-
-  const now = Date.now();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const meta = (a: any) => {
-    const boostActif = !!a.boostExpire && new Date(a.boostExpire).getTime() > now && a.miseEnAvant !== "STANDARD";
-    return {
-      montant: boostActif ? a.boostMontant ?? 0 : 0, // 0 = annonce non monétisée
-      note: a.user?.profil?.noteMoyenne ?? 0,
-      score: a.user?.profil?.scoreReputation ?? 0,
-      dispo: a.user?.profil?.disponible === false ? 0 : 1,
-      created: new Date(a.createdAt).getTime(),
-    };
-  };
-
-  const tri = filtres?.tri;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  annonces.sort((a: any, b: any) => {
-    const ma = meta(a);
-    const mb = meta(b);
-    // 1) Monétisées toujours avant les non monétisées ; plus le boost payé est élevé, plus l'annonce est haute
-    if (mb.montant !== ma.montant) return mb.montant - ma.montant;
-    // 2) Tri secondaire choisi (s'applique surtout aux non monétisées, ou à montant égal)
-    if (tri === "note" && mb.note !== ma.note) return mb.note - ma.note;
-    if (tri === "dispo" && mb.dispo !== ma.dispo) return mb.dispo - ma.dispo;
-    if (tri !== "note" && tri !== "dispo" && mb.score !== ma.score) return mb.score - ma.score;
-    // 3) La plus récente d'abord
-    return mb.created - ma.created;
+    // 1) Marque décroissante : PREMIUM > TOP > VIP > URGENT > STANDARD (ordre de l'enum).
+    //    La tâche planifiée repasse les marques expirées en STANDARD → l'ordre reste juste.
+    // 2) Tri secondaire choisi. 3) La plus récente d'abord.
+    orderBy: [{ miseEnAvant: "desc" }, ...secondaire, { createdAt: "desc" }],
+    take: ANNONCES_PAR_PAGE,
+    skip: (page - 1) * ANNONCES_PAR_PAGE,
   });
 
   const cartes = annonces.map(versCarte);

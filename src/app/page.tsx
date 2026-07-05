@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { listerAnnonces } from "@/lib/annonces";
+import { listerAnnonces, compterAnnonces, ANNONCES_PAR_PAGE } from "@/lib/annonces";
 import { db } from "@/lib/db";
 import { getParrainageConfig } from "@/lib/parametres";
 import { AccueilUnifie } from "@/components/AccueilUnifie";
@@ -11,18 +11,20 @@ export const dynamic = "force-dynamic";
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ ville?: string; service?: string; compte?: string; q?: string; tier?: string; tri?: string }>;
+  searchParams: Promise<{ ville?: string; service?: string; compte?: string; q?: string; tier?: string; tri?: string; page?: string }>;
 }) {
   const [sp, session] = await Promise.all([searchParams, auth()]);
+  const page = Math.max(1, Number(sp.page) || 1);
+  const filtres = { villeId: sp.ville, service: sp.service, compte: sp.compte, q: sp.q, tier: sp.tier, tri: sp.tri };
 
-  const [profils, villes, config] = await Promise.all([
-    listerAnnonces(
-      { villeId: sp.ville, service: sp.service, compte: sp.compte, q: sp.q, tier: sp.tier, tri: sp.tri },
-      session?.user?.id,
-    ),
+  const [profils, total, villes, config] = await Promise.all([
+    listerAnnonces({ ...filtres, page }, session?.user?.id),
+    compterAnnonces(filtres),
     db.ville.findMany({ where: { actif: true }, orderBy: { nom: "asc" }, select: { id: true, nom: true } }),
     getParrainageConfig(),
   ]);
+
+  const totalPages = Math.max(1, Math.ceil(total / ANNONCES_PAR_PAGE));
 
   return (
     <>
@@ -45,6 +47,9 @@ export default async function Home({
         q={sp.q ?? ""}
         taux={config.taux}
         dureeMois={config.dureeMois}
+        page={page}
+        totalPages={totalPages}
+        query={{ ville: sp.ville, service: sp.service, compte: sp.compte, q: sp.q, tier: sp.tier, tri: sp.tri }}
       />
     </>
   );

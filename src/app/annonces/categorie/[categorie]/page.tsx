@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { listerAnnonces } from "@/lib/annonces";
+import { listerAnnonces, compterAnnonces, ANNONCES_PAR_PAGE } from "@/lib/annonces";
 import { ProfilCard } from "@/components/ProfilCard";
+import { Pagination } from "@/components/Pagination";
 import { JsonLd } from "@/components/JsonLd";
 import { categorieParSlug, MARQUE_SEO, SITE_URL } from "@/lib/seo";
 
@@ -27,15 +28,18 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   };
 }
 
-export default async function Page({ params }: { params: Promise<Params> }) {
-  const { categorie } = await params;
+export default async function Page({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<{ page?: string }> }) {
+  const [{ categorie }, sp] = await Promise.all([params, searchParams]);
   const c = categorieParSlug(categorie);
   if (!c) notFound();
+  const page = Math.max(1, Number(sp.page) || 1);
 
-  const [annonces, villes] = await Promise.all([
-    listerAnnonces({ service: c.enum }),
+  const [annonces, total, villes] = await Promise.all([
+    listerAnnonces({ service: c.enum, page }),
+    compterAnnonces({ service: c.enum }),
     db.ville.findMany({ where: { actif: true }, orderBy: { nom: "asc" }, take: 16, select: { nom: true, slug: true } }),
   ]);
+  const totalPages = Math.max(1, Math.ceil(total / ANNONCES_PAR_PAGE));
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -51,7 +55,7 @@ export default async function Page({ params }: { params: Promise<Params> }) {
       {
         "@type": "ItemList",
         name: `${c.titre} au Cameroun`,
-        numberOfItems: annonces.length,
+        numberOfItems: total,
         itemListElement: annonces.slice(0, 20).map((a, i) => ({
           "@type": "ListItem",
           position: i + 1,
@@ -81,7 +85,7 @@ export default async function Page({ params }: { params: Promise<Params> }) {
         <h1 className="text-2xl font-medium text-principal md:text-3xl">{c.titre} au Cameroun</h1>
         <p className="mt-2 max-w-2xl text-sm text-secondaire">{c.intro.replace("{ville}", "votre ville")}</p>
         <p className="mt-2 text-sm text-texte-succes">
-          <b>{annonces.length}</b> annonce{annonces.length > 1 ? "s" : ""} {c.titre.toLowerCase()} au Cameroun.
+          <b>{total}</b> annonce{total > 1 ? "s" : ""} {c.titre.toLowerCase()} au Cameroun.
         </p>
 
         {annonces.length > 0 ? (
@@ -96,6 +100,8 @@ export default async function Page({ params }: { params: Promise<Params> }) {
             <Link href="/publier" className="font-medium text-action-verte">Publier la première →</Link>
           </div>
         )}
+
+        <Pagination basePath={`/annonces/categorie/${c.slug}`} page={page} totalPages={totalPages} />
 
         {/* Maillage interne : cette catégorie par ville */}
         <section className="mt-10">

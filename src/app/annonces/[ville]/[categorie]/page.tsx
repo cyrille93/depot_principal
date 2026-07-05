@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { listerAnnonces } from "@/lib/annonces";
+import { listerAnnonces, compterAnnonces, ANNONCES_PAR_PAGE } from "@/lib/annonces";
 import { ProfilCard } from "@/components/ProfilCard";
+import { Pagination } from "@/components/Pagination";
 import { JsonLd } from "@/components/JsonLd";
 import { CATEGORIES_SEO, categorieParSlug, MARQUE_SEO, SITE_URL } from "@/lib/seo";
 
@@ -36,13 +37,15 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   };
 }
 
-export default async function Page({ params }: { params: Promise<Params> }) {
-  const p = await params;
+export default async function Page({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<{ page?: string }> }) {
+  const [p, sp] = await Promise.all([params, searchParams]);
   const { v, c } = await resoudre(p);
   if (!v || !c) notFound();
+  const page = Math.max(1, Number(sp.page) || 1);
 
-  const [annonces, autresVilles] = await Promise.all([
-    listerAnnonces({ villeId: v.id, service: c.enum }),
+  const [annonces, total, autresVilles] = await Promise.all([
+    listerAnnonces({ villeId: v.id, service: c.enum, page }),
+    compterAnnonces({ villeId: v.id, service: c.enum }),
     db.ville.findMany({
       where: { actif: true, slug: { not: v.slug } },
       orderBy: { nom: "asc" },
@@ -50,6 +53,7 @@ export default async function Page({ params }: { params: Promise<Params> }) {
       select: { nom: true, slug: true },
     }),
   ]);
+  const totalPages = Math.max(1, Math.ceil(total / ANNONCES_PAR_PAGE));
 
   const intro = c.intro.replace("{ville}", v.nom);
 
@@ -72,7 +76,7 @@ export default async function Page({ params }: { params: Promise<Params> }) {
       {
         "@type": "ItemList",
         name: `${c.titre} à ${v.nom}`,
-        numberOfItems: annonces.length,
+        numberOfItems: total,
         itemListElement: annonces.slice(0, 20).map((a, i) => ({
           "@type": "ListItem",
           position: i + 1,
@@ -106,7 +110,7 @@ export default async function Page({ params }: { params: Promise<Params> }) {
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-secondaire">{intro}</p>
         <p className="mt-2 text-sm text-texte-succes">
-          <b>{annonces.length}</b> annonce{annonces.length > 1 ? "s" : ""} {c.titre.toLowerCase()} à {v.nom}.
+          <b>{total}</b> annonce{total > 1 ? "s" : ""} {c.titre.toLowerCase()} à {v.nom}.
         </p>
 
         {/* Annonces */}
@@ -122,6 +126,8 @@ export default async function Page({ params }: { params: Promise<Params> }) {
             <Link href="/publier" className="font-medium text-action-verte">Publier la première →</Link>
           </div>
         )}
+
+        <Pagination basePath={`/annonces/${v.slug}/${c.slug}`} page={page} totalPages={totalPages} />
 
         {/* Maillage interne : autres catégories dans la même ville */}
         <section className="mt-10">

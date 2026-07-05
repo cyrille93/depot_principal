@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, X } from "lucide-react";
 import type { ProfilFictif } from "@/lib/mock";
 import { ProfilCard } from "@/components/ProfilCard";
+import { Pagination } from "@/components/Pagination";
 import { NotificationsBell } from "@/components/NotificationsBell";
 import { Logo } from "@/components/Logo";
 
@@ -28,6 +29,9 @@ export function AccueilUnifie({
   q,
   taux,
   dureeMois,
+  page = 1,
+  totalPages = 1,
+  query = {},
 }: {
   profils: ProfilFictif[];
   tri: string;
@@ -37,6 +41,9 @@ export function AccueilUnifie({
   q: string;
   taux: number;
   dureeMois: number;
+  page?: number;
+  totalPages?: number;
+  query?: Record<string, string | undefined>;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -218,6 +225,8 @@ export function AccueilUnifie({
               ))}
             </div>
           )}
+
+          <Pagination basePath="/" page={page} totalPages={totalPages} query={query} />
         </main>
       </div>
 

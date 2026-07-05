@@ -1,0 +1,5 @@
+{
+  "crons": [
+    { "path": "/api/cron/nettoyer-boosts", "schedule": "0 3 * * *" }
+  ]
+}
