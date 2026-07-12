@@ -21,6 +21,8 @@ export async function creerAnnonce(
   const categorie = String(formData.get("categorie") ?? "");
   const villeId = String(formData.get("villeId") ?? "");
   const prix = Number(formData.get("prix") ?? 0);
+  const whatsapp = String(formData.get("whatsapp") ?? "").trim();
+  const nomAnnonceur = String(formData.get("nomAnnonceur") ?? "").trim();
 
   let medias: { floutes: number; src?: string }[] = [];
   try {
@@ -34,9 +36,11 @@ export async function creerAnnonce(
   if (!CATS.includes(categorie as Cat)) return { error: "Catégorie invalide." };
   if (!villeId) return { error: "Choisissez une ville." };
   if (!Number.isFinite(prix) || prix < 0) return { error: "Tarif invalide." };
+  if (nomAnnonceur.length < 2) return { error: "Indiquez le nom de l'annonceur." };
+  if (whatsapp.replace(/\D/g, "").length < 8) return { error: "Numéro WhatsApp invalide." };
 
   // S'assurer que l'utilisateur a un profil (création minimale sinon)
-  const pseudo = (session.user.email ?? "pro").split("@")[0];
+  const pseudo = nomAnnonceur || (session.user.email ?? "pro").split("@")[0];
   await db.profil.upsert({
     where: { userId: session.user.id },
     update: {},
@@ -50,6 +54,8 @@ export async function creerAnnonce(
       description,
       categorie: categorie as Cat,
       prix: Math.round(prix),
+      whatsapp,
+      nomAnnonceur,
       statut: "ACTIVE",
       userId: session.user.id,
       villeId,

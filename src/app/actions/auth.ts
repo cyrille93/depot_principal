@@ -14,10 +14,10 @@ export async function inscription(
   formData: FormData
 ): Promise<AuthState> {
   const parsed = signupSchema.safeParse({
-    email: formData.get("email"),
+    email: formData.get("email") ?? undefined,
     password: formData.get("password"),
     role: formData.get("role") ?? "CLIENT",
-    telephone: formData.get("telephone"),
+    telephone: formData.get("telephone") ?? undefined,
     villeId: formData.get("villeId"),
     codeParrain: formData.get("codeParrain") || undefined,
   });
@@ -25,18 +25,22 @@ export async function inscription(
     return { error: parsed.error.issues[0]?.message ?? "Champs invalides." };
   }
   const { email, password, role, telephone, villeId, codeParrain } = parsed.data;
-  const emailNorm = email.trim().toLowerCase();
-  const telNorm = telephone.replace(/\s+/g, "");
+  const emailNorm = email && email.trim() ? email.trim().toLowerCase() : null;
+  const telNorm = telephone && telephone.trim() ? telephone.replace(/\s+/g, "") : null;
   const pseudoSaisi = String(formData.get("pseudo") ?? "").trim().slice(0, 30);
 
-  const existing = await db.user.findUnique({ where: { email: emailNorm } });
-  if (existing) {
-    return { error: "Un compte existe déjà avec cet email." };
+  if (emailNorm) {
+    const existing = await db.user.findUnique({ where: { email: emailNorm } });
+    if (existing) {
+      return { error: "Un compte existe déjà avec cet email." };
+    }
   }
 
-  const telPris = await db.user.findUnique({ where: { telephone: telNorm } });
-  if (telPris) {
-    return { error: "Ce numéro de téléphone est déjà utilisé." };
+  if (telNorm) {
+    const telPris = await db.user.findUnique({ where: { telephone: telNorm } });
+    if (telPris) {
+      return { error: "Ce numéro de téléphone est déjà utilisé." };
+    }
   }
 
   const pays = await db.pays.findUnique({
@@ -59,7 +63,7 @@ export async function inscription(
   }
 
   const codeParrainage = "CONF-" + crypto.randomUUID().slice(0, 6).toUpperCase();
-  const pseudo = pseudoSaisi.length >= 2 ? pseudoSaisi : emailNorm.split("@")[0];
+  const pseudo = pseudoSaisi.length >= 2 ? pseudoSaisi : (emailNorm?.split("@")[0] ?? telNorm ?? "membre");
   const motDePasseHash = await hashPassword(password);
 
   const user = await db.user.create({
@@ -89,7 +93,7 @@ export async function inscription(
   // Connecte directement après l'inscription.
   // Client → accueil (il vient chercher) ; Annonceur/Admin → son compte (où on l'invite à publier).
   const cible = role === "CLIENT" ? "/" : "/compte";
-  await signIn("credentials", { identifiant: emailNorm, password, redirectTo: cible });
+  await signIn("credentials", { identifiant: emailNorm ?? telNorm, password, redirectTo: cible });
   return {};
 }
 

@@ -233,6 +233,8 @@ model Annonce {
   description String
   categorie   CategorieAnnonce
   prix        Int // FCFA
+  whatsapp    String? // numéro WhatsApp de contact (saisi à la publication)
+  nomAnnonceur String? // nom affiché de l'annonceur (saisi à la publication)
   statut      StatutAnnonce    @default(EN_ATTENTE)
   estBoostee  Boolean          @default(false)
   boostDebut  DateTime?

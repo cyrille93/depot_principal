@@ -170,6 +170,28 @@ export function PublierForm({ villes }: { villes: { id: string; nom: string }[] 
           />
         </div>
 
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="mb-1 block text-sm text-principal">Nom de l'annonceur <span className="text-vip">*</span></label>
+            <input
+              name="nomAnnonceur"
+              required
+              className="w-full rounded-champ border border-bordure bg-carte px-3 py-2.5 text-sm outline-none focus:border-feuille"
+              placeholder="Ex : Sandra"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm text-principal">Numéro WhatsApp <span className="text-vip">*</span></label>
+            <input
+              name="whatsapp"
+              required
+              inputMode="tel"
+              className="w-full rounded-champ border border-bordure bg-carte px-3 py-2.5 text-sm outline-none focus:border-feuille"
+              placeholder="6XX XX XX XX"
+            />
+          </div>
+        </div>
+
         <div>
           <label className="mb-1 block text-sm text-principal">
             Photos <span className="text-tertiaire">({medias.length}/10)</span>

@@ -498,6 +498,9 @@ export function AdminClient({
                 </div>
               )}
             </div>
+            <Link href={`/admin/compte/${u.id}`} className="flex shrink-0 items-center rounded-champ border border-bordure px-3 py-1.5 text-xs font-medium text-principal hover:border-feuille">
+              Fiche
+            </Link>
             <button onClick={() => ecrire(u.id)} className="flex shrink-0 items-center gap-1.5 rounded-champ border border-feuille px-3 py-1.5 text-xs font-medium text-action-verte">
               <MessageSquare className="h-3.5 w-3.5" /> Écrire
             </button>

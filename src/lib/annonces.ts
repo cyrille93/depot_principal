@@ -225,6 +225,7 @@ export async function getAnnonceDetail(id: string): Promise<ProfilDetail | null>
 
   return {
     ...carte,
+    pseudo: a.nomAnnonceur ?? carte.pseudo,
     quartier: a.ville.region ?? "Centre-ville",
     description: a.description,
     ancienneteMois: ancienneteMois(a.user.profil?.createdAt ?? a.createdAt),
@@ -241,7 +242,7 @@ export async function getAnnonceDetail(id: string): Promise<ProfilDetail | null>
       identite: a.user.identiteVerifiee,
       selfie: a.user.selfieVerifie,
     },
-    telephoneContact: a.user.telephone,
+    telephoneContact: a.whatsapp ?? a.user.telephone,
     avisListe,
   };
 }

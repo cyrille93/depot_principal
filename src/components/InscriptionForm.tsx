@@ -42,11 +42,10 @@ export function InscriptionForm({ villes }: { villes: { id: string; nom: string 
           </div>
 
           <div>
-            <label className="mb-1 block text-sm text-principal">Email <span className="text-vip">*</span></label>
+            <label className="mb-1 block text-sm text-principal">Email <span className="text-tertiaire">(e-mail ou téléphone)</span></label>
             <input
               name="email"
               type="email"
-              required
               autoComplete="email"
               className="w-full rounded-champ border border-bordure bg-carte px-3 py-2.5 text-sm text-principal outline-none focus:border-feuille"
               placeholder="vous@exemple.cm"
@@ -54,11 +53,10 @@ export function InscriptionForm({ villes }: { villes: { id: string; nom: string 
           </div>
 
           <div>
-            <label className="mb-1 block text-sm text-principal">Téléphone <span className="text-vip">*</span></label>
+            <label className="mb-1 block text-sm text-principal">Téléphone <span className="text-tertiaire">(e-mail ou téléphone)</span></label>
             <input
               name="telephone"
               type="tel"
-              required
               autoComplete="tel"
               className="w-full rounded-champ border border-bordure bg-carte px-3 py-2.5 text-sm text-principal outline-none focus:border-feuille"
               placeholder="+237 6 XX XX XX XX"
