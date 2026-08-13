@@ -15,7 +15,6 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     where: { id },
     include: {
       profil: true,
-      portefeuille: { include: { mouvements: { orderBy: { createdAt: "desc" }, take: 10 } } },
       annonces: { orderBy: { createdAt: "desc" }, select: { id: true, titre: true, statut: true } },
     },
   });
@@ -29,14 +28,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     role: user.role,
     statut: user.statut,
     niveauVerification: user.niveauVerification,
-    solde: user.portefeuille?.solde ?? 0,
     annonces: user.annonces,
-    mouvements: (user.portefeuille?.mouvements ?? []).map((m: { id: string; montant: number; libelle: string; createdAt: Date }) => ({
-      id: m.id,
-      montant: m.montant,
-      libelle: m.libelle,
-      date: new Date(m.createdAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }),
-    })),
   };
 
   return <FicheCompteAdmin compte={compte} />;

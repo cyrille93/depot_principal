@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ChevronLeft,
@@ -18,6 +18,9 @@ import {
   Eye,
   MapPin,
   Check,
+  X,
+  ChevronRight,
+  Expand,
 } from "lucide-react";
 import type { ProfilDetail } from "@/lib/mock";
 import type { MonAvis } from "@/lib/annonces";
@@ -25,6 +28,7 @@ import { AvisForm } from "@/components/AvisForm";
 import { SignalerModal } from "@/components/SignalerModal";
 import { demarrerConversation } from "@/app/actions/messages";
 import { useToast } from "@/components/Toast";
+import { Watermark } from "@/components/Watermark";
 
 function Etoiles({ note, size = 14 }: { note: number; size?: number }) {
   return (
@@ -178,6 +182,99 @@ function CarteAction({ p }: { p: ProfilDetail }) {
   );
 }
 
+// Visionneuse plein écran : clic sur la photo principale ou une vignette pour l'ouvrir,
+// navigation précédent/suivant, fermeture par croix, clic en dehors ou touche Échap.
+function Lightbox({
+  medias,
+  index,
+  onIndex,
+  onClose,
+  estImg,
+}: {
+  medias: { url?: string; floutee?: boolean }[];
+  index: number;
+  onIndex: (i: number) => void;
+  onClose: () => void;
+  estImg: (u?: string) => boolean;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowRight") onIndex((index + 1) % medias.length);
+      if (e.key === "ArrowLeft") onIndex((index - 1 + medias.length) % medias.length);
+    };
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [index, medias.length, onIndex, onClose]);
+
+  const m = medias[index];
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Photo en plein écran"
+    >
+      <button
+        onClick={onClose}
+        aria-label="Fermer"
+        className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-pill bg-white/10 text-white hover:bg-white/20"
+      >
+        <X className="h-5 w-5" />
+      </button>
+
+      {medias.length > 1 && (
+        <>
+          <button
+            onClick={(e) => { e.stopPropagation(); onIndex((index - 1 + medias.length) % medias.length); }}
+            aria-label="Photo précédente"
+            className="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-pill bg-white/10 text-white hover:bg-white/20 sm:left-4"
+          >
+            <ChevronLeft className="h-6 w-6" />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onIndex((index + 1) % medias.length); }}
+            aria-label="Photo suivante"
+            className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-pill bg-white/10 text-white hover:bg-white/20 sm:right-4"
+          >
+            <ChevronRight className="h-6 w-6" />
+          </button>
+        </>
+      )}
+
+      <div
+        className="relative flex max-h-full max-w-full items-center justify-center"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {estImg(m.url) ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={m.url} alt="" className="max-h-[90vh] max-w-full object-contain" />
+            <Watermark opacity={0.4} textClassName="text-4xl sm:text-6xl" />
+          </>
+        ) : (
+          <div className="flex flex-col items-center text-white/70">
+            <EyeOff className="h-12 w-12" strokeWidth={1.4} />
+            <span className="mt-2 text-sm">visage flouté</span>
+          </div>
+        )}
+      </div>
+
+      {medias.length > 1 && (
+        <span className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-pill bg-white/10 px-3 py-1 text-xs text-white">
+          {index + 1} / {medias.length}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function FicheProfil({
   profil: p,
   peutEvaluer = false,
@@ -188,6 +285,7 @@ export function FicheProfil({
   monAvis?: MonAvis | null;
 }) {
   const [actif, setActif] = useState(0);
+  const [lightbox, setLightbox] = useState(false);
   const medias = p.medias && p.medias.length > 0 ? p.medias : [{ url: "", floutee: true }];
   const estImg = (u?: string) => !!u && (u.startsWith("data:") || u.startsWith("http"));
   const courant = medias[actif] ?? medias[0];
@@ -208,10 +306,22 @@ export function FicheProfil({
         {/* Colonne principale */}
         <div>
           {/* Galerie */}
-          <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-carte bg-media sm:aspect-[16/10]">
+          <div
+            className={
+              "relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-carte bg-media sm:aspect-[16/10]" +
+              (estImg(courant.url) ? " cursor-zoom-in" : "")
+            }
+            onClick={() => estImg(courant.url) && setLightbox(true)}
+          >
             {estImg(courant.url) ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={courant.url} alt="" className="absolute inset-0 h-full w-full object-cover" />
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={courant.url} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                <Watermark textClassName="text-3xl sm:text-5xl" />
+                <span className="absolute bottom-3 right-3 flex items-center gap-1 rounded-pill bg-carte/90 px-2.5 py-1 text-[11px] text-principal">
+                  <Expand className="h-3.5 w-3.5" /> Agrandir
+                </span>
+              </>
             ) : (
               <div className="flex flex-col items-center text-tertiaire">
                 <EyeOff className="h-10 w-10" strokeWidth={1.4} />
@@ -373,6 +483,10 @@ export function FicheProfil({
           <CarteAction p={p} />
         </aside>
       </div>
+
+      {lightbox && (
+        <Lightbox medias={medias} index={actif} onIndex={setActif} onClose={() => setLightbox(false)} estImg={estImg} />
+      )}
     </main>
   );
 }

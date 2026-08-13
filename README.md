@@ -74,11 +74,9 @@ npm run dev             # http://localhost:3000
 | `/explorer` | le feed (données fictives) |
 | `/profil/[id]` | fiche profil détaillée (ex: /profil/1) |
 | `/publier` | publication réelle (connexion requise, annonce en attente de modération) |
-| `/portefeuille` | tableau de bord portefeuille + parrainage |
-| `/recharge` | recharge Mobile Money (Orange / MTN) |
-| `/transfert` | transfert de solde entre utilisateurs |
-| `/premium` | offres Premium (booster la visibilité) |
-| `/admin` | back-office réel (réservé ADMIN) : modération annonces/signalements |
+| `/booster/[id]` | booster une annonce : gratuit pendant le lancement, sinon demande via WhatsApp (activation manuelle par l'admin) |
+| `/booster/suivi` | suivi des mises en avant actives |
+| `/admin` | back-office réel (réservé ADMIN) : modération annonces/signalements, activation manuelle des boosts, numéro WhatsApp support |
 
 > Avant de lancer, générez un vrai secret : `npx auth secret` (ou renseignez `AUTH_SECRET` dans `.env`).
 

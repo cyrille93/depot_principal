@@ -5,7 +5,6 @@ import { signIn } from "@/auth";
 import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/password";
 import { signupSchema } from "@/lib/validation";
-import { getParrainageConfig } from "@/lib/parametres";
 
 export type AuthState = { error?: string };
 
@@ -19,12 +18,11 @@ export async function inscription(
     role: formData.get("role") ?? "CLIENT",
     telephone: formData.get("telephone") ?? undefined,
     villeId: formData.get("villeId"),
-    codeParrain: formData.get("codeParrain") || undefined,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Champs invalides." };
   }
-  const { email, password, role, telephone, villeId, codeParrain } = parsed.data;
+  const { email, password, role, telephone, villeId } = parsed.data;
   const emailNorm = email && email.trim() ? email.trim().toLowerCase() : null;
   const telNorm = telephone && telephone.trim() ? telephone.replace(/\s+/g, "") : null;
   const pseudoSaisi = String(formData.get("pseudo") ?? "").trim().slice(0, 30);
@@ -50,23 +48,13 @@ export async function inscription(
     return { error: "Pays par défaut introuvable — avez-vous lancé le seed ?" };
   }
 
-  // Parrain éventuel : seuls les comptes annonceurs (PRO) peuvent parrainer
-  let parrain = null;
-  if (codeParrain) {
-    parrain = await db.user.findUnique({ where: { codeParrainage: codeParrain } });
-    if (!parrain) {
-      return { error: "Code de parrainage invalide." };
-    }
-    if (parrain.role !== "PRO") {
-      return { error: "Seuls les comptes annonceurs peuvent parrainer." };
-    }
-  }
-
+  // Champ conservé en base (unique, non nul) mais la fonctionnalité de
+  // parrainage n'est plus utilisée côté application.
   const codeParrainage = "CONF-" + crypto.randomUUID().slice(0, 6).toUpperCase();
   const pseudo = pseudoSaisi.length >= 2 ? pseudoSaisi : (emailNorm?.split("@")[0] ?? telNorm ?? "membre");
   const motDePasseHash = await hashPassword(password);
 
-  const user = await db.user.create({
+  await db.user.create({
     data: {
       email: emailNorm,
       telephone: telNorm,
@@ -76,19 +64,8 @@ export async function inscription(
       locale: pays.locale,
       codeParrainage,
       profil: { create: { pseudo, villeId } },
-      portefeuille: { create: { solde: 0 } },
     },
   });
-
-  // Relation de parrainage (durée configurable côté admin)
-  if (parrain) {
-    const { dureeMois } = await getParrainageConfig();
-    const dateFin = new Date();
-    dateFin.setMonth(dateFin.getMonth() + dureeMois);
-    await db.parrainage.create({
-      data: { parrainId: parrain.id, filleulId: user.id, codeUtilise: codeParrain!, dateFin },
-    });
-  }
 
   // Connecte directement après l'inscription.
   // Client → accueil (il vient chercher) ; Annonceur/Admin → son compte (où on l'invite à publier).

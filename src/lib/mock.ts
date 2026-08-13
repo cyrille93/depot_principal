@@ -42,45 +42,6 @@ export const VILLES_CM = [
   "Ngaoundéré", "Bertoua", "Buea", "Limbe", "Kumba", "Kribi", "Ebolowa",
 ] as const;
 
-export type TypeMouvement =
-  | "recharge"
-  | "commission"
-  | "bonus"
-  | "premium"
-  | "transfert_in"
-  | "transfert_out";
-
-export type Mouvement = {
-  id: string;
-  type: TypeMouvement;
-  label: string;
-  montant: number; // signé, en FCFA
-  date: string;
-};
-
-export const PORTEFEUILLE = {
-  solde: 24500,
-  code: "CONF-SK237",
-  lien: "https://confiance.cm/r/CONF-SK237",
-  filleulsInscrits: 12,
-  filleulsActifs: 7,
-  gainsGeneres: 18750,
-  commissionsEnAttente: 2300,
-  actifCeMois: true,
-  tauxCommission: 5,
-  dureeMois: 6,
-};
-
-export const MOUVEMENTS: Mouvement[] = [
-  { id: "t1", type: "commission", label: "Commission — recharge de Léa", montant: 1000, date: "10 juin 2026" },
-  { id: "t2", type: "recharge", label: "Recharge Orange Money", montant: 10000, date: "8 juin 2026" },
-  { id: "t3", type: "premium", label: "Mise en avant — 7 jours", montant: -3000, date: "6 juin 2026" },
-  { id: "t4", type: "commission", label: "Commission — recharge de Awa", montant: 750, date: "4 juin 2026" },
-  { id: "t5", type: "transfert_out", label: "Transfert à Mia", montant: -5000, date: "2 juin 2026" },
-  { id: "t6", type: "bonus", label: "Bonus de bienvenue", montant: 2000, date: "1 juin 2026" },
-  { id: "t7", type: "commission", label: "Commission — recharge de Inès", montant: 550, date: "29 mai 2026" },
-];
-
 export const fcfa = (n: number) => (Number.isFinite(n) ? n : 0).toLocaleString("fr-FR") + " F";
 
 export type Avis = {

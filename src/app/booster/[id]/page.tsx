@@ -2,7 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { BoosterForm } from "@/components/BoosterForm";
-import { getTarifsMiseEnAvant, forfaitsGratuits } from "@/lib/parametres";
+import { getTarifsMiseEnAvant, forfaitsGratuits, getWhatsappSupport } from "@/lib/parametres";
 
 export const dynamic = "force-dynamic";
 
@@ -21,13 +21,28 @@ export default async function BoosterPage({
   });
   if (!annonce || annonce.userId !== session.user.id) notFound();
 
-  const porte = await db.portefeuille.findUnique({
-    where: { userId: session.user.id },
-    select: { solde: true },
-  });
+  const [tarifs, gratuit, whatsapp, user] = await Promise.all([
+    getTarifsMiseEnAvant(),
+    forfaitsGratuits(),
+    getWhatsappSupport(),
+    db.user.findUnique({
+      where: { id: session.user.id },
+      select: { email: true, telephone: true, profil: { select: { pseudo: true } } },
+    }),
+  ]);
 
-  const tarifs = await getTarifsMiseEnAvant();
-  const gratuit = await forfaitsGratuits();
+  const pseudo = user?.profil?.pseudo ?? session.user.email?.split("@")[0] ?? "Annonceur";
+  const contact = user?.email ?? user?.telephone ?? "sans contact";
+  const identite = `${pseudo} (${contact})`;
 
-  return <BoosterForm annonceId={annonce.id} titre={annonce.titre} solde={porte?.solde ?? 0} tarifs={tarifs} gratuit={gratuit} />;
+  return (
+    <BoosterForm
+      annonceId={annonce.id}
+      titre={annonce.titre}
+      tarifs={tarifs}
+      gratuit={gratuit}
+      whatsapp={whatsapp}
+      identite={identite}
+    />
+  );
 }

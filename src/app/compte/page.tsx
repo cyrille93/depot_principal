@@ -2,21 +2,29 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth, signOut } from "@/auth";
 import { db } from "@/lib/db";
-import { fcfa } from "@/lib/mock";
 import {
-  Wallet,
+  MessageCircle,
   PlusCircle,
   Compass,
-  Gift,
   ShieldCheck,
   LogOut,
   FileText,
   Heart,
   MessageSquare,
   Rocket,
+  Clock,
+  TrendingUp,
+  Star,
+  Crown,
+  Check,
 } from "lucide-react";
 import { MesAnnoncesListe } from "@/components/MesAnnoncesListe";
 import { DisponibiliteToggle } from "@/components/DisponibiliteToggle";
+import { getWhatsappSupport, getTarifsMiseEnAvant, forfaitsGratuits } from "@/lib/parametres";
+import { FORFAITS_BOOST } from "@/lib/premium";
+import { fcfa } from "@/lib/mock";
+
+const ICONES_FORFAIT: Record<string, typeof Clock> = { URGENT: Clock, TOP: TrendingUp, VIP: Star, PREMIUM: Crown };
 
 export const dynamic = "force-dynamic";
 
@@ -36,12 +44,11 @@ export default async function ComptePage() {
   const userId = session.user.id;
 
   // 1re connexion après réinitialisation : forcer le changement de mot de passe
-  const compte = await db.user.findUnique({ where: { id: userId }, select: { doitChangerMotDePasse: true } });
+  const compte = await db.user.findUnique({ where: { id: userId }, select: { doitChangerMotDePasse: true, telephone: true } });
   if (compte?.doitChangerMotDePasse) redirect("/changer-mot-de-passe");
 
-  const [profil, porte, annonces] = await Promise.all([
+  const [profil, annonces, whatsapp, tarifs, gratuit] = await Promise.all([
     db.profil.findUnique({ where: { userId }, include: { ville: true } }),
-    db.portefeuille.findUnique({ where: { userId }, select: { solde: true } }),
     role === "PRO"
       ? db.annonce.findMany({
           where: { userId },
@@ -49,11 +56,17 @@ export default async function ComptePage() {
           orderBy: { createdAt: "desc" },
         })
       : Promise.resolve([] as AnnonceRow[]),
+    getWhatsappSupport(),
+    getTarifsMiseEnAvant(),
+    forfaitsGratuits(),
   ]);
 
   const pseudo = profil?.pseudo ?? session.user.email?.split("@")[0] ?? "Vous";
   const initiales = pseudo.slice(0, 2).toUpperCase();
   const mesAnnonces = annonces as AnnonceRow[];
+  const waSupportLink = whatsapp ? `https://wa.me/${whatsapp}` : null;
+  const identite = `${pseudo} (${session.user.email ?? compte?.telephone ?? "sans contact"})`;
+  const annonceUnique = mesAnnonces.length === 1 ? mesAnnonces[0].titre : null;
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6 pb-24 md:pb-6">
@@ -72,12 +85,6 @@ export default async function ComptePage() {
             </div>
             <p className="truncate text-sm text-sur-foret-mute">{session.user.email}</p>
           </div>
-        </div>
-        <div className="mt-4 flex items-center justify-between rounded-champ bg-foret-fonce/40 px-4 py-3">
-          <span className="flex items-center gap-2 text-sm text-sur-foret-mute">
-            <Wallet className="h-[18px] w-[18px]" /> Solde du portefeuille
-          </span>
-          <span className="text-lg font-medium text-sur-foret">{fcfa(porte?.solde ?? 0)}</span>
         </div>
       </section>
 
@@ -130,11 +137,18 @@ export default async function ComptePage() {
           <span className="text-xs text-secondaire">Parcourir les profils</span>
         </Link>
 
-        <Link href="/portefeuille" className="flex flex-col gap-2 rounded-carte border border-bordure bg-carte p-4">
-          <Gift className="h-5 w-5 text-action-verte" />
-          <span className="text-sm font-medium text-principal">Portefeuille &amp; parrainage</span>
-          <span className="text-xs text-secondaire">Solde, recharges, filleuls</span>
-        </Link>
+        {waSupportLink && (
+          <a
+            href={waSupportLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex flex-col gap-2 rounded-carte border border-bordure bg-carte p-4"
+          >
+            <MessageCircle className="h-5 w-5 text-action-verte" />
+            <span className="text-sm font-medium text-principal">Contacter le support</span>
+            <span className="text-xs text-secondaire">Boost, paiement, assistance — par WhatsApp</span>
+          </a>
+        )}
 
         <Link href="/favoris" className="flex flex-col gap-2 rounded-carte border border-bordure bg-carte p-4">
           <Heart className="h-5 w-5" style={{ color: "#E11D48" }} />
@@ -167,6 +181,80 @@ export default async function ComptePage() {
         <div className="mt-4">
           <DisponibiliteToggle initial={profil?.disponible ?? true} />
         </div>
+      )}
+
+      {/* Forfaits de mise en avant (annonceur) */}
+      {role === "PRO" && (
+        <section className="mt-4 rounded-carte border border-bordure bg-carte p-4">
+          <div className="mb-1 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-base font-medium text-principal">
+              <Rocket className="h-5 w-5 text-action-verte" /> Forfaits de mise en avant
+            </h2>
+          </div>
+          <p className="mb-3 text-sm text-secondaire">
+            {gratuit
+              ? "Tous les forfaits sont offerts pendant le lancement — activez-les gratuitement depuis une de vos annonces."
+              : "Choisissez un forfait depuis une de vos annonces. Le paiement se fait sur WhatsApp, l'activation est confirmée par l'équipe."}
+          </p>
+
+          <div className="space-y-2">
+            {FORFAITS_BOOST.map((f) => {
+              const Icon = ICONES_FORFAIT[f.v];
+              const lienWa = waSupportLink
+                ? `https://wa.me/${whatsapp}?text=${encodeURIComponent(
+                    `Bonjour, je suis ${identite}, compte Professionnel sur Rose Annonce. Je souhaite activer le forfait ${f.label}` +
+                      (annonceUnique ? ` sur mon annonce « ${annonceUnique} »` : " sur une de mes annonces") +
+                      ". Merci de m'indiquer la marche à suivre."
+                  )}`
+                : null;
+              return (
+                <div key={f.v} className="rounded-petit border border-bordure p-3">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-page text-texte-succes">
+                      <Icon className="h-5 w-5" strokeWidth={1.75} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-principal">{f.label}</span>
+                        <span className={`rounded-pill px-1.5 py-0.5 text-[10px] font-medium ${f.badgeClass}`}>{f.label}</span>
+                      </div>
+                      <div className="text-xs text-secondaire">{f.accroche}</div>
+                    </div>
+                    <span className="shrink-0 text-sm font-medium text-principal">
+                      {gratuit ? "Offert" : `${fcfa(tarifs[f.v] ?? 0)}/j`}
+                    </span>
+                  </div>
+                  <ul className="mt-2.5 space-y-1 border-t border-bordure pt-2.5">
+                    {f.avantages.map((av) => (
+                      <li key={av} className="flex items-start gap-2 text-xs text-secondaire">
+                        <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-action-verte" strokeWidth={2.5} />
+                        {av}
+                      </li>
+                    ))}
+                  </ul>
+                  {!gratuit && lienWa && (
+                    <a
+                      href={lienWa}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2.5 flex items-center justify-center gap-2 rounded-champ bg-feuille py-2 text-xs font-medium text-sur-vert"
+                    >
+                      <MessageCircle className="h-3.5 w-3.5" /> Demander {f.label} sur WhatsApp
+                    </a>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {mesAnnonces.length > 0 && (
+            <p className="mt-3 text-center text-[11px] text-tertiaire">
+              {gratuit
+                ? "Ouvrez une annonce ci-dessous et cliquez sur « Booster » pour l'activer gratuitement."
+                : "Ouvrez une annonce ci-dessous et cliquez sur « Booster » pour choisir la durée avant de contacter WhatsApp."}
+            </p>
+          )}
+        </section>
       )}
 
       {/* Mes annonces (annonceur) */}

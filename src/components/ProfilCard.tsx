@@ -6,6 +6,7 @@ import { Eye, EyeOff, Star, Heart, BadgeCheck, MapPin } from "lucide-react";
 import type { ProfilFictif } from "@/lib/mock";
 import { toggleFavori } from "@/app/actions/favoris";
 import { useToast } from "@/components/Toast";
+import { Watermark } from "@/components/Watermark";
 
 export function ProfilCard({ profil }: { profil: ProfilFictif }) {
   const [favori, setFavori] = useState(!!profil.favori);
@@ -34,8 +35,11 @@ export function ProfilCard({ profil }: { profil: ProfilFictif }) {
     >
       <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-media">
         {profil.photo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={profil.photo} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={profil.photo} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            <Watermark />
+          </>
         ) : (
           <div className="flex flex-col items-center text-tertiaire">
             <EyeOff className="h-7 w-7" strokeWidth={1.5} />

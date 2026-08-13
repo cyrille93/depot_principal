@@ -3,14 +3,22 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { TARIFS_MISE_EN_AVANT } from "@/lib/premium";
-import { getTarifsMiseEnAvant, forfaitsGratuits } from "@/lib/parametres";
+import { forfaitsGratuits } from "@/lib/parametres";
 import { creerNotification } from "@/lib/notifications";
 
-const NIVEAUX = ["URGENT", "VIP", "TOP", "PREMIUM"];
+const NIVEAUX = ["URGENT", "VIP", "TOP", "PREMIUM"] as const;
+type Niveau = (typeof NIVEAUX)[number];
+function estNiveauValide(v: string): v is Niveau {
+  return (NIVEAUX as readonly string[]).includes(v);
+}
 
 export type BoostState = { ok?: boolean; error?: string };
 
+// Activation gratuite d'une mise en avant par son propriétaire, uniquement
+// pendant la fenêtre de lancement (forfaits offerts). En dehors de cette
+// fenêtre, le boost payant passe par une demande WhatsApp puis une
+// activation manuelle par l'admin (voir boosterAnnonceAdmin ci-dessous) —
+// il n'y a plus de paiement en ligne intégré à l'application.
 export async function acheterMiseEnAvant(
   annonceId: string,
   niveau: string,
@@ -20,48 +28,25 @@ export async function acheterMiseEnAvant(
   if (!session?.user) return { error: "Connectez-vous pour booster une annonce." };
   const userId = session.user.id;
 
-  if (!NIVEAUX.includes(niveau)) return { error: "Niveau de mise en avant invalide." };
+  if (!estNiveauValide(niveau)) return { error: "Niveau de mise en avant invalide." };
   if (!Number.isInteger(jours) || jours < 1 || jours > 5) return { error: "La durée doit être de 1 à 5 jours." };
 
   const annonce = await db.annonce.findUnique({ where: { id: annonceId }, select: { userId: true } });
   if (!annonce || annonce.userId !== userId) return { error: "Annonce introuvable ou non autorisée." };
 
   const gratuit = await forfaitsGratuits();
-  const tarifs = await getTarifsMiseEnAvant();
-  const cout = gratuit ? 0 : (tarifs[niveau] ?? TARIFS_MISE_EN_AVANT[niveau]) * jours;
-
-  // Pendant la fenêtre de lancement (forfaits offerts), aucun débit ni contrôle de solde.
   if (!gratuit) {
-    const porte = await db.portefeuille.findUnique({ where: { userId }, select: { solde: true } });
-    if (!porte || porte.solde < cout) {
-      return { error: "Solde insuffisant." };
-    }
+    return { error: "L'activation gratuite est terminée. Passez par WhatsApp pour booster votre annonce." };
   }
 
   const debut = new Date();
   const expire = new Date();
   expire.setDate(expire.getDate() + jours);
 
-  await db.$transaction(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async (tx: any) => {
-      if (cout > 0) {
-        await tx.portefeuille.update({
-          where: { userId },
-          data: {
-            solde: { decrement: cout },
-            mouvements: {
-              create: { type: "ACHAT_PREMIUM", montant: -cout, libelle: `Mise en avant ${niveau} (${jours} j)` },
-            },
-          },
-        });
-      }
-      await tx.annonce.update({
-        where: { id: annonceId },
-        data: { miseEnAvant: niveau, estBoostee: true, boostDebut: debut, boostExpire: expire, boostMontant: cout },
-      });
-    }
-  );
+  await db.annonce.update({
+    where: { id: annonceId },
+    data: { miseEnAvant: niveau, estBoostee: true, boostDebut: debut, boostExpire: expire, boostMontant: 0 },
+  });
 
   await creerNotification(
     userId,
@@ -73,7 +58,46 @@ export async function acheterMiseEnAvant(
 
   revalidatePath("/");
   revalidatePath("/compte");
-  revalidatePath("/portefeuille");
+  revalidatePath("/booster/suivi");
+  return { ok: true };
+}
+
+// Activation manuelle d'un boost par l'admin, après confirmation d'une
+// demande/paiement reçue hors ligne (WhatsApp). Aucun contrôle de solde :
+// c'est l'admin qui valide.
+export async function boosterAnnonceAdmin(
+  annonceId: string,
+  niveau: string,
+  jours: number
+): Promise<BoostState> {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "ADMIN") return { error: "Accès refusé." };
+
+  if (!estNiveauValide(niveau)) return { error: "Niveau de mise en avant invalide." };
+  if (!Number.isInteger(jours) || jours < 1 || jours > 30) return { error: "Durée invalide (1 à 30 jours)." };
+
+  const annonce = await db.annonce.findUnique({ where: { id: annonceId }, select: { userId: true, titre: true } });
+  if (!annonce) return { error: "Annonce introuvable." };
+
+  const debut = new Date();
+  const expire = new Date();
+  expire.setDate(expire.getDate() + jours);
+
+  await db.annonce.update({
+    where: { id: annonceId },
+    data: { miseEnAvant: niveau, estBoostee: true, boostDebut: debut, boostExpire: expire },
+  });
+
+  await creerNotification(
+    annonce.userId,
+    "SYSTEME",
+    "Mise en avant activée",
+    `Votre annonce « ${annonce.titre} » est en ${niveau} pour ${jours} jour${jours > 1 ? "s" : ""}.`,
+    "/booster/suivi"
+  );
+
+  revalidatePath("/");
+  revalidatePath("/admin");
   revalidatePath("/booster/suivi");
   return { ok: true };
 }

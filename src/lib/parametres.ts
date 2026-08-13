@@ -1,8 +1,6 @@
 import { db } from "@/lib/db";
 import { TARIFS_MISE_EN_AVANT } from "@/lib/premium";
 
-export const PARRAINAGE_DEFAUT = { taux: 5, dureeMois: 6 };
-
 const CLE_TARIF: Record<string, string> = {
   URGENT: "tarif_urgent",
   TOP: "tarif_top",
@@ -26,23 +24,6 @@ export async function getTarifsMiseEnAvant(): Promise<Record<string, number>> {
   }
 }
 
-export async function getParrainageConfig(): Promise<{ taux: number; dureeMois: number }> {
-  try {
-    const rows = await db.parametre.findMany({
-      where: { cle: { in: ["parrainage_taux", "parrainage_duree_mois"] } },
-    });
-    const map = Object.fromEntries(rows.map((r: { cle: string; valeur: string }) => [r.cle, r.valeur]));
-    const taux = Number(map["parrainage_taux"]);
-    const duree = Number(map["parrainage_duree_mois"]);
-    return {
-      taux: Number.isFinite(taux) && taux > 0 ? taux : PARRAINAGE_DEFAUT.taux,
-      dureeMois: Number.isFinite(duree) && duree > 0 ? duree : PARRAINAGE_DEFAUT.dureeMois,
-    };
-  } catch {
-    return PARRAINAGE_DEFAUT;
-  }
-}
-
 export async function getParametre(cle: string): Promise<string | null> {
   try {
     const row = await db.parametre.findUnique({ where: { cle } });
@@ -63,4 +44,14 @@ export async function forfaitsGratuits(): Promise<boolean> {
   const fin = new Date(`${v}T23:59:59`);
   if (Number.isNaN(fin.getTime())) return false;
   return new Date() <= fin;
+}
+
+// --- Contact WhatsApp support ---
+// Numéro WhatsApp de l'équipe, utilisé pour les demandes de boost payant et le
+// contact général une fois le lancement gratuit terminé. Réglable par l'admin
+// (paramètre "whatsapp_support"), au format international sans le "+".
+export async function getWhatsappSupport(): Promise<string | null> {
+  const v = await getParametre("whatsapp_support");
+  const n = (v ?? "").replace(/\D/g, "");
+  return n.length >= 8 ? n : null;
 }

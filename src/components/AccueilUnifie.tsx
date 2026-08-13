@@ -27,8 +27,6 @@ export function AccueilUnifie({
   serviceActif,
   villeActive,
   q,
-  taux,
-  dureeMois,
   page = 1,
   totalPages = 1,
   query = {},
@@ -39,8 +37,6 @@ export function AccueilUnifie({
   serviceActif: string;
   villeActive: string;
   q: string;
-  taux: number;
-  dureeMois: number;
   page?: number;
   totalPages?: number;
   query?: Record<string, string | undefined>;
@@ -48,7 +44,6 @@ export function AccueilUnifie({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [drawer, setDrawer] = useState(false);
-  const [replie, setReplie] = useState(false);
   const [recherche, setRecherche] = useState(q);
 
   const navig = (patch: Record<string, string | undefined>) => {
@@ -161,36 +156,6 @@ export function AccueilUnifie({
           })}
         </div>
       </header>
-
-      {/* BANNIÈRE parrainage compacte repliable */}
-      <section className="px-4 pt-4 md:px-8">
-        {replie ? (
-          <button
-            onClick={() => setReplie(false)}
-            className="flex w-full items-center gap-2 rounded-pill bg-foret px-4 py-2 text-left"
-          >
-            <span>🎁</span>
-            <span className="flex-1 text-xs font-medium text-sur-foret">Gagnez {taux}% en parrainant</span>
-            <span className="text-sur-foret-mute">⌄</span>
-          </button>
-        ) : (
-          <div className="flex items-center gap-3 rounded-carte bg-foret px-4 py-3">
-            <span className="text-xl">🎁</span>
-            <div className="min-w-0 flex-1">
-              <div className="text-[13px] font-medium leading-snug text-sur-foret md:text-sm">
-                Ne faites pas que dépenser — gagnez <span className="text-feuille-clair">{taux}%</span> sur chaque recharge de vos filleuls
-              </div>
-              <div className="hidden text-xs text-sur-foret-mute md:block">
-                pendant {dureeMois} mois, crédité automatiquement.
-              </div>
-            </div>
-            <Link href="/compte" className="shrink-0 rounded-champ bg-feuille px-3.5 py-2 text-xs font-medium text-sur-vert">
-              Mon code
-            </Link>
-            <button onClick={() => setReplie(true)} aria-label="Replier" className="shrink-0 text-sur-foret-mute">⌃</button>
-          </div>
-        )}
-      </section>
 
       {/* CORPS : sidebar (ordinateur) + grille */}
       <div className="flex items-start gap-6 px-4 py-5 md:px-8">

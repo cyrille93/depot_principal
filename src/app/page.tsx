@@ -1,7 +1,6 @@
 import { auth } from "@/auth";
 import { listerAnnonces, compterAnnonces, ANNONCES_PAR_PAGE } from "@/lib/annonces";
 import { db } from "@/lib/db";
-import { getParrainageConfig } from "@/lib/parametres";
 import { AccueilUnifie } from "@/components/AccueilUnifie";
 import { JsonLd } from "@/components/JsonLd";
 import { MARQUE_SEO, SITE_URL } from "@/lib/seo";
@@ -17,11 +16,10 @@ export default async function Home({
   const page = Math.max(1, Number(sp.page) || 1);
   const filtres = { villeId: sp.ville, service: sp.service, compte: sp.compte, q: sp.q, tier: sp.tier, tri: sp.tri };
 
-  const [profils, total, villes, config] = await Promise.all([
+  const [profils, total, villes] = await Promise.all([
     listerAnnonces({ ...filtres, page }, session?.user?.id),
     compterAnnonces(filtres),
     db.ville.findMany({ where: { actif: true }, orderBy: { nom: "asc" }, select: { id: true, nom: true } }),
-    getParrainageConfig(),
   ]);
 
   const totalPages = Math.max(1, Math.ceil(total / ANNONCES_PAR_PAGE));
@@ -45,8 +43,6 @@ export default async function Home({
         serviceActif={sp.service ?? ""}
         villeActive={sp.ville ?? ""}
         q={sp.q ?? ""}
-        taux={config.taux}
-        dureeMois={config.dureeMois}
         page={page}
         totalPages={totalPages}
         query={{ ville: sp.ville, service: sp.service, compte: sp.compte, q: sp.q, tier: sp.tier, tri: sp.tri }}

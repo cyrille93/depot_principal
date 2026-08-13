@@ -7,7 +7,6 @@ import {
   Users,
   FileText,
   Flag,
-  Gift,
   ScrollText,
   ImagePlus,
   BarChart3,
@@ -21,6 +20,7 @@ import {
   Trash2,
   Power,
   KeyRound,
+  Rocket,
 } from "lucide-react";
 import { ContenuEditor } from "@/components/ContenuEditor";
 import { Logo } from "@/components/Logo";
@@ -32,7 +32,7 @@ const NAV = [
   { label: "Annonces", icon: FileText },
   { label: "Signalements", icon: Flag },
   { label: "Mots de passe", icon: KeyRound },
-  { label: "Parrainage", icon: Gift },
+  { label: "Boost", icon: BarChart3 },
   { label: "Pages légales", icon: ScrollText },
   { label: "Apparence", icon: ImagePlus },
 ];
@@ -40,16 +40,13 @@ const NAV = [
 export type AdminStats = {
   utilisateurs: string;
   annoncesActives: string;
-  revenus: string;
   signalements: string;
-  commissions: string;
   enLigne: string;
 };
 export type AnnonceAttente = { id: string; titre: string; pseudo: string; ville: string; cat: string };
 export type SignalementItem = { id: string; cible: string; motif: string; annonceId: string | null };
 export type VerifItem = { id: string; type: string; pseudo: string; image: string };
-export type AdminUser = { id: string; pseudo: string; identifiant: string; role: string; estAdmin: boolean; suspendu: boolean; niveau: number; parrainPar: string | null; enLigne: boolean; vuLe: string | null };
-export type ParrItem = { id: string; parrain: string; filleul: string; date: string; statut: string; total: string; nb: number };
+export type AdminUser = { id: string; pseudo: string; identifiant: string; role: string; estAdmin: boolean; suspendu: boolean; niveau: number; enLigne: boolean; vuLe: string | null };
 export type ContenuItem = { cle: string; titre: string; corps: string };
 
 export function AdminClient({
@@ -58,11 +55,8 @@ export function AdminClient({
   signalements: signalementsInit,
   verifs: verifsInit,
   utilisateurs: utilisateursInit,
-  parrainages,
   enLigne,
   contenus,
-  tauxInit,
-  dureeInit,
   tarifsInit,
   validerAnnonce,
   refuserAnnonce,
@@ -78,8 +72,10 @@ export function AdminClient({
   reactiverCompte,
   supprimerCompte,
   enregistrerContenuPage,
-  enregistrerParrainage,
   enregistrerTarifs,
+  whatsappInit,
+  enregistrerWhatsappSupport,
+  boosterAnnonceAdmin,
   enregistrerLogo,
   reinitialiserLogo,
   demandesReset: demandesResetInit,
@@ -91,11 +87,8 @@ export function AdminClient({
   signalements: SignalementItem[];
   verifs: VerifItem[];
   utilisateurs: AdminUser[];
-  parrainages: ParrItem[];
   enLigne: number;
   contenus: ContenuItem[];
-  tauxInit: number;
-  dureeInit: number;
   tarifsInit: Record<string, number>;
   validerAnnonce: (id: string) => Promise<{ ok?: boolean; error?: string }>;
   refuserAnnonce: (id: string) => Promise<{ ok?: boolean; error?: string }>;
@@ -111,8 +104,10 @@ export function AdminClient({
   reactiverCompte: (id: string) => Promise<{ ok?: boolean; error?: string }>;
   supprimerCompte: (id: string) => Promise<{ ok?: boolean; error?: string }>;
   enregistrerContenuPage: (cle: string, titre: string, corps: string) => Promise<{ ok?: boolean; error?: string }>;
-  enregistrerParrainage: (taux: number, dureeMois: number) => Promise<{ ok?: boolean; error?: string }>;
   enregistrerTarifs: (tarifs: { URGENT: number; TOP: number; VIP: number; PREMIUM: number }) => Promise<{ ok?: boolean; error?: string }>;
+  whatsappInit: string;
+  enregistrerWhatsappSupport: (numero: string) => Promise<{ ok?: boolean; error?: string }>;
+  boosterAnnonceAdmin: (annonceId: string, niveau: string, jours: number) => Promise<{ ok?: boolean; error?: string }>;
   enregistrerLogo: (dataUrl: string) => Promise<{ ok?: boolean; error?: string }>;
   reinitialiserLogo: () => Promise<{ ok?: boolean; error?: string }>;
   demandesReset: { id: string; identifiant: string; pseudo: string; quand: string }[];
@@ -130,9 +125,6 @@ export function AdminClient({
   const [verifs, setVerifs] = useState(verifsInit);
   const [users, setUsers] = useState(utilisateursInit);
   const [, startTransition] = useTransition();
-  const [taux, setTaux] = useState(tauxInit);
-  const [duree, setDuree] = useState(dureeInit);
-  const [savingParr, setSavingParr] = useState(false);
   const [tarifs, setTarifs] = useState({
     URGENT: tarifsInit.URGENT ?? 1000,
     TOP: tarifsInit.TOP ?? 1500,
@@ -147,6 +139,30 @@ export function AdminClient({
     setSavingTarifs(false);
     toast(r.ok ? "Tarifs enregistrés." : r.error ?? "Erreur.", r.ok ? "success" : "error");
   };
+  const [whatsapp, setWhatsapp] = useState(whatsappInit);
+  const [savingWhatsapp, setSavingWhatsapp] = useState(false);
+
+  const sauverWhatsapp = async () => {
+    setSavingWhatsapp(true);
+    const r = await enregistrerWhatsappSupport(whatsapp);
+    setSavingWhatsapp(false);
+    toast(r.ok ? "Numéro enregistré." : r.error ?? "Erreur.", r.ok ? "success" : "error");
+  };
+
+  // Activation manuelle d'un boost (annonce en cours de sélection dans la liste)
+  const [boostCible, setBoostCible] = useState<string | null>(null);
+  const [boostNiveau, setBoostNiveau] = useState("VIP");
+  const [boostJours, setBoostJours] = useState(3);
+  const [boostBusy, setBoostBusy] = useState(false);
+
+  const activerBoost = async (annonceId: string) => {
+    setBoostBusy(true);
+    const r = await boosterAnnonceAdmin(annonceId, boostNiveau, boostJours);
+    setBoostBusy(false);
+    toast(r.ok ? "Boost activé." : r.error ?? "Erreur.", r.ok ? "success" : "error");
+    if (r.ok) setBoostCible(null);
+  };
+
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [savingLogo, setSavingLogo] = useState(false);
 
@@ -200,13 +216,6 @@ export function AdminClient({
     });
   };
 
-  const sauverParrainage = async () => {
-    setSavingParr(true);
-    const r = await enregistrerParrainage(taux, duree);
-    setSavingParr(false);
-    toast(r.ok ? "Paramètres enregistrés." : r.error ?? "Erreur.", r.ok ? "success" : "error");
-  };
-
   const choisirLogo = (file: File) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -249,9 +258,7 @@ export function AdminClient({
     { label: "Utilisateurs", valeur: stats.utilisateurs, icon: Users, live: false },
     { label: "En ligne", valeur: stats.enLigne, icon: Users, live: true },
     { label: "Annonces actives", valeur: stats.annoncesActives, icon: FileText, live: false },
-    { label: "Revenus du mois", valeur: stats.revenus, icon: BarChart3, live: false },
     { label: "Signalements", valeur: stats.signalements, icon: Flag, live: false },
-    { label: "Commissions versées", valeur: stats.commissions, icon: Gift, live: false },
   ];
 
   const valider = (id: string) => { setAnnonces((a) => a.filter((x) => x.id !== id)); startTransition(() => { validerAnnonce(id); }); };
@@ -346,6 +353,13 @@ export function AdminClient({
               </button>
             )}
 
+            <button
+              onClick={() => { setBoostCible(boostCible === a.id ? null : a.id); setBoostNiveau("VIP"); setBoostJours(3); }}
+              className="flex items-center gap-1 rounded-champ border border-feuille px-2.5 py-1.5 text-xs font-medium text-action-verte"
+            >
+              <Rocket className="h-3.5 w-3.5" /> Booster
+            </button>
+
             {confirmSuppr === a.id ? (
               <button onClick={() => supprimerDepuisListe(a.id)} className="flex items-center gap-1 rounded-champ bg-vip px-2.5 py-1.5 text-xs font-medium text-white">
                 <Trash2 className="h-3.5 w-3.5" /> Confirmer ?
@@ -354,6 +368,36 @@ export function AdminClient({
               <button onClick={() => setConfirmSuppr(a.id)} className="flex items-center gap-1 rounded-champ border border-bordure px-2.5 py-1.5 text-xs font-medium text-secondaire" aria-label="Supprimer">
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
+            )}
+
+            {boostCible === a.id && (
+              <div className="flex w-full flex-wrap items-center gap-2 rounded-petit bg-page p-2.5">
+                <select
+                  value={boostNiveau}
+                  onChange={(e) => setBoostNiveau(e.target.value)}
+                  className="rounded-champ border border-bordure bg-carte px-2 py-1.5 text-xs outline-none focus:border-feuille"
+                >
+                  {(["URGENT", "TOP", "VIP", "PREMIUM"] as const).map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  min={1}
+                  max={30}
+                  value={boostJours}
+                  onChange={(e) => setBoostJours(Number(e.target.value))}
+                  className="w-16 rounded-champ border border-bordure bg-carte px-2 py-1.5 text-xs outline-none focus:border-feuille"
+                />
+                <span className="text-[11px] text-secondaire">jour(s)</span>
+                <button
+                  onClick={() => activerBoost(a.id)}
+                  disabled={boostBusy}
+                  className="rounded-champ bg-feuille px-3 py-1.5 text-xs font-medium text-sur-vert disabled:opacity-60"
+                >
+                  {boostBusy ? "Activation…" : "Activer"}
+                </button>
+              </div>
             )}
           </div>
         ))}
@@ -492,11 +536,6 @@ export function AdminClient({
                 {u.identifiant}
                 {!u.enLigne && u.vuLe && <span className="text-tertiaire"> · vu(e) le {u.vuLe}</span>}
               </div>
-              {u.parrainPar && (
-                <div className="mt-0.5 inline-flex items-center gap-1 rounded-pill bg-pill-fond px-2 py-0.5 text-[10px] text-pill-texte">
-                  <Gift className="h-3 w-3" /> Filleul de {u.parrainPar}
-                </div>
-              )}
             </div>
             <Link href={`/admin/compte/${u.id}`} className="flex shrink-0 items-center rounded-champ border border-bordure px-3 py-1.5 text-xs font-medium text-principal hover:border-feuille">
               Fiche
@@ -648,61 +687,25 @@ export function AdminClient({
 
           {onglet === "Mots de passe" && DemandesResetSection}
 
-          {onglet === "Parrainage" && (
+          {onglet === "Boost" && (
             <div className="space-y-5">
               <section className="rounded-carte border border-bordure bg-carte p-4">
-                <h2 className="mb-3 flex items-center gap-1.5 text-sm font-medium text-principal">
-                  <Gift className="h-4 w-4 text-action-verte" /> Parrainages ({parrainages.length})
-                </h2>
-                {parrainages.length === 0 ? (
-                  <p className="py-6 text-center text-sm text-tertiaire">Aucun parrainage pour le moment.</p>
-                ) : (
-                  <>
-                    <div className="hidden grid-cols-12 gap-2 border-b border-bordure pb-2 text-[11px] font-medium text-secondaire sm:grid">
-                      <span className="col-span-3">Parrain</span>
-                      <span className="col-span-3">Filleul</span>
-                      <span className="col-span-2">Date</span>
-                      <span className="col-span-2">Statut</span>
-                      <span className="col-span-2 text-right">Commissions</span>
-                    </div>
-                    <div className="max-h-[32rem] divide-y divide-bordure overflow-y-auto">
-                      {parrainages.map((p) => (
-                        <div key={p.id} className="grid grid-cols-2 gap-1 py-2.5 text-sm sm:grid-cols-12 sm:items-center sm:gap-2">
-                          <span className="col-span-1 truncate font-medium text-principal sm:col-span-3">{p.parrain}</span>
-                          <span className="col-span-1 truncate text-secondaire sm:col-span-3">→ {p.filleul}</span>
-                          <span className="col-span-1 text-[11px] text-tertiaire sm:col-span-2">{p.date}</span>
-                          <span className="col-span-1 sm:col-span-2">
-                            <span className={"rounded-pill px-2 py-0.5 text-[10px] font-medium " + (p.statut === "Actif" ? "bg-tint-succes text-texte-succes" : "bg-pill-fond text-pill-texte")}>
-                              {p.statut}
-                            </span>
-                          </span>
-                          <span className="col-span-2 text-right text-principal sm:col-span-2">
-                            {p.total} <span className="text-[11px] text-tertiaire">({p.nb})</span>
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </section>
-
-              <section className="rounded-carte border border-bordure bg-carte p-4">
-                <h2 className="mb-1 text-sm font-medium text-principal">Paramètres du parrainage</h2>
-                <p className="mb-3 text-xs text-secondaire">Taux de commission et durée du programme.</p>
-                <div className="flex flex-wrap items-end gap-4">
-                  <div>
-                    <label className="mb-1 block text-xs text-secondaire">Commission (%)</label>
-                    <input type="number" value={taux} onChange={(e) => setTaux(Number(e.target.value))} className="w-28 rounded-champ border border-bordure bg-carte px-3 py-2 text-sm outline-none focus:border-feuille" />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs text-secondaire">Durée (mois)</label>
-                    <input type="number" value={duree} onChange={(e) => setDuree(Number(e.target.value))} className="w-28 rounded-champ border border-bordure bg-carte px-3 py-2 text-sm outline-none focus:border-feuille" />
-                  </div>
-                  <button onClick={sauverParrainage} disabled={savingParr} className="rounded-champ bg-feuille px-5 py-2 text-sm font-medium text-sur-vert disabled:opacity-60">
-                    {savingParr ? "Enregistrement…" : "Enregistrer"}
+                <h2 className="mb-1 text-sm font-medium text-principal">Numéro WhatsApp support</h2>
+                <p className="mb-3 text-xs text-secondaire">
+                  Utilisé pour le bouton « Contacter le support » et les demandes de boost payant une fois le lancement
+                  gratuit terminé. Format international sans le « + » (ex. 2376XXXXXXXX).
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    value={whatsapp}
+                    onChange={(e) => setWhatsapp(e.target.value)}
+                    placeholder="2376XXXXXXXX"
+                    className="w-56 rounded-champ border border-bordure bg-carte px-3 py-2 text-sm outline-none focus:border-feuille"
+                  />
+                  <button onClick={sauverWhatsapp} disabled={savingWhatsapp} className="rounded-champ bg-feuille px-5 py-2 text-sm font-medium text-sur-vert disabled:opacity-60">
+                    {savingWhatsapp ? "Enregistrement…" : "Enregistrer"}
                   </button>
                 </div>
-                <p className="mt-3 text-[11px] text-tertiaire">Appliqué : {taux}% sur chaque recharge des filleuls, pendant {duree} mois. Le nouveau taux s'applique immédiatement ; la durée s'applique aux nouveaux filleuls.</p>
               </section>
 
               <section className="rounded-carte border border-bordure bg-carte p-4">

@@ -1,14 +1,14 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { fcfa } from "@/lib/mock";
 import { AdminClient } from "@/components/AdminClient";
 import { validerAnnonce, refuserAnnonce, traiterSignalement, validerVerification, refuserVerification, suspendreAnnonce, reactiverAnnonce, supprimerAnnonceAdmin, suspendreCompte, reactiverCompte, supprimerCompte } from "@/app/actions/moderation";
 import { genererMotDePasseTemporaire, rejeterDemandeReset } from "@/app/actions/reset";
 import { contacterUtilisateur } from "@/app/actions/messages";
 import { enregistrerContenuPage } from "@/app/actions/contenus";
-import { enregistrerParrainage, enregistrerTarifs, enregistrerLogo, reinitialiserLogo } from "@/app/actions/parametres";
-import { getParrainageConfig, getTarifsMiseEnAvant } from "@/lib/parametres";
+import { enregistrerTarifs, enregistrerLogo, reinitialiserLogo, enregistrerWhatsappSupport } from "@/app/actions/parametres";
+import { boosterAnnonceAdmin } from "@/app/actions/premium";
+import { getTarifsMiseEnAvant, getWhatsappSupport } from "@/lib/parametres";
 import { getTousContenus, CLES_CONTENU } from "@/lib/contenus";
 
 export const dynamic = "force-dynamic";
@@ -35,7 +35,6 @@ type UserRow = {
   niveauVerification: number;
   derniereActivite: Date | null;
   profil: { pseudo: string } | null;
-  parrainageRecu: { parrain: { email: string | null; telephone: string | null; profil: { pseudo: string } | null } } | null;
 };
 
 export default async function AdminPage() {
@@ -43,15 +42,12 @@ export default async function AdminPage() {
   if (!session?.user) redirect("/connexion");
   if (session.user.role !== "ADMIN") redirect("/explorer");
 
-  const debutMois = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   const seuilEnLigne = new Date(Date.now() - 5 * 60 * 1000);
 
-  const [nbUsers, nbActives, nbSignal, commAgg, rechAgg, enAttente, signalements, verifsPending, usersRows, enLigne, parrainagesRows, toutesAnnoncesRows] = await Promise.all([
+  const [nbUsers, nbActives, nbSignal, enAttente, signalements, verifsPending, usersRows, enLigne, toutesAnnoncesRows] = await Promise.all([
     db.user.count(),
     db.annonce.count({ where: { statut: "ACTIVE" } }),
     db.signalement.count({ where: { statut: "OUVERT" } }),
-    db.commission.aggregate({ _sum: { montant: true }, where: { statut: "VERSEE" } }),
-    db.recharge.aggregate({ _sum: { montant: true }, where: { statut: "CONFIRMEE", createdAt: { gte: debutMois } } }),
     db.annonce.findMany({
       where: { statut: "EN_ATTENTE" },
       include: { user: { include: { profil: true } }, ville: true },
@@ -70,18 +66,9 @@ export default async function AdminPage() {
         id: true, email: true, telephone: true, role: true, statut: true, niveauVerification: true,
         derniereActivite: true,
         profil: { select: { pseudo: true } },
-        parrainageRecu: { select: { parrain: { select: { email: true, telephone: true, profil: { select: { pseudo: true } } } } } },
       },
     }),
     db.user.count({ where: { derniereActivite: { gte: seuilEnLigne } } }),
-    db.parrainage.findMany({
-      orderBy: { createdAt: "desc" },
-      include: {
-        parrain: { select: { email: true, telephone: true, profil: { select: { pseudo: true } } } },
-        filleul: { select: { email: true, telephone: true, profil: { select: { pseudo: true } } } },
-        commissions: { select: { montant: true, statut: true } },
-      },
-    }),
     db.annonce.findMany({
       where: { statut: { not: "SUPPRIMEE" } },
       include: { user: { include: { profil: true } }, ville: true },
@@ -93,9 +80,7 @@ export default async function AdminPage() {
   const stats = {
     utilisateurs: String(nbUsers),
     annoncesActives: String(nbActives),
-    revenus: fcfa(rechAgg._sum.montant ?? 0),
     signalements: String(nbSignal),
-    commissions: fcfa(commAgg._sum.montant ?? 0),
     enLigne: String(enLigne),
   };
 
@@ -147,7 +132,6 @@ export default async function AdminPage() {
 
   const ROLEL: Record<string, string> = { CLIENT: "Client", PRO: "Annonceur", ADMIN: "Admin" };
   const utilisateurs = usersRows.map((u: UserRow) => {
-    const p = u.parrainageRecu?.parrain;
     const enLigneU = !!u.derniereActivite && u.derniereActivite >= seuilEnLigne;
     return {
       id: u.id,
@@ -157,7 +141,6 @@ export default async function AdminPage() {
       estAdmin: u.role === "ADMIN",
       suspendu: u.statut === "SUSPENDU",
       niveau: u.niveauVerification,
-      parrainPar: p ? (p.profil?.pseudo ?? p.email?.split("@")[0] ?? p.telephone ?? null) : null,
       enLigne: enLigneU,
       vuLe: u.derniereActivite
         ? u.derniereActivite.toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
@@ -165,29 +148,10 @@ export default async function AdminPage() {
     };
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const PSTAT: Record<string, string> = { ACTIF: "Actif", SUSPENDU: "Suspendu", EXPIRE: "Expiré" };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const parrainages = (parrainagesRows as any[]).map((p) => {
-    const versees = p.commissions
-      .filter((c: { statut: string }) => c.statut === "VERSEE")
-      .reduce((s: number, c: { montant: number }) => s + c.montant, 0);
-    return {
-      id: p.id,
-      parrain: p.parrain.profil?.pseudo ?? p.parrain.email?.split("@")[0] ?? p.parrain.telephone ?? "—",
-      filleul: p.filleul.profil?.pseudo ?? p.filleul.email?.split("@")[0] ?? p.filleul.telephone ?? "—",
-      date: new Date(p.createdAt).toLocaleDateString("fr-FR"),
-      statut: PSTAT[p.statut] ?? p.statut,
-      total: fcfa(versees),
-      nb: p.commissions.length,
-    };
-  });
-
   const contenusObj = await getTousContenus();
   const contenus = CLES_CONTENU.map((cle) => ({ cle, titre: contenusObj[cle].titre, corps: contenusObj[cle].corps }));
 
-  const config = await getParrainageConfig();
-  const tarifs = await getTarifsMiseEnAvant();
+  const [tarifs, whatsappSupport] = await Promise.all([getTarifsMiseEnAvant(), getWhatsappSupport()]);
 
   const demandesRows = await db.demandeReset.findMany({
     where: { statut: "OUVERTE" },
@@ -210,11 +174,8 @@ export default async function AdminPage() {
       signalements={sigs}
       verifs={verifs}
       utilisateurs={utilisateurs}
-      parrainages={parrainages}
       enLigne={enLigne}
       contenus={contenus}
-      tauxInit={config.taux}
-      dureeInit={config.dureeMois}
       validerAnnonce={validerAnnonce}
       refuserAnnonce={refuserAnnonce}
       traiterSignalement={traiterSignalement}
@@ -228,9 +189,11 @@ export default async function AdminPage() {
       supprimerCompte={supprimerCompte}
       reactiverCompte={reactiverCompte}
       enregistrerContenuPage={enregistrerContenuPage}
-      enregistrerParrainage={enregistrerParrainage}
       tarifsInit={tarifs}
       enregistrerTarifs={enregistrerTarifs}
+      whatsappInit={whatsappSupport ?? ""}
+      enregistrerWhatsappSupport={enregistrerWhatsappSupport}
+      boosterAnnonceAdmin={boosterAnnonceAdmin}
       enregistrerLogo={enregistrerLogo}
       reinitialiserLogo={reinitialiserLogo}
       demandesReset={demandesReset}

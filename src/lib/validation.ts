@@ -12,7 +12,6 @@ export const signupSchema = z
     role: z.enum(["CLIENT", "PRO"]).default("CLIENT"),
     telephone: z.string().trim().optional(),
     villeId: z.string().min(1, "Choisissez une ville."),
-    codeParrain: z.string().trim().optional(),
   })
   .superRefine((d, ctx) => {
     const hasEmail = !!d.email && d.email.length > 0;

@@ -3,41 +3,34 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Clock, Star, TrendingUp, Crown, Wallet, CircleAlert } from "lucide-react";
+import { Clock, Star, TrendingUp, Crown, MessageCircle, Check } from "lucide-react";
 import { fcfa } from "@/lib/mock";
 import { acheterMiseEnAvant } from "@/app/actions/premium";
-import { TARIFS_MISE_EN_AVANT } from "@/lib/premium";
+import { TARIFS_MISE_EN_AVANT, FORFAITS_BOOST } from "@/lib/premium";
 import { useToast } from "@/components/Toast";
 
-const NIVEAUX = [
-  { v: "URGENT", l: "Urgent", desc: "Badge Urgent + remontée dans la liste", Icon: Clock },
-  { v: "TOP", l: "TOP", desc: "Mis en avant en tête des résultats", Icon: TrendingUp },
-  { v: "VIP", l: "VIP", desc: "Badge VIP doré, forte visibilité", Icon: Star },
-  { v: "PREMIUM", l: "Premium", desc: "Visibilité maximale sur la plateforme", Icon: Crown },
-];
+const ICONES: Record<string, typeof Clock> = { URGENT: Clock, TOP: TrendingUp, VIP: Star, PREMIUM: Crown };
 
 export function BoosterForm({
   annonceId,
   titre,
-  solde,
   tarifs = TARIFS_MISE_EN_AVANT,
   gratuit = false,
+  whatsapp = null,
+  identite = "Annonceur",
 }: {
   annonceId: string;
   titre: string;
-  solde: number;
   tarifs?: Record<string, number>;
   gratuit?: boolean;
+  whatsapp?: string | null;
+  identite?: string;
 }) {
   const router = useRouter();
   const toast = useToast();
   const [niveau, setNiveau] = useState("VIP");
   const [jours, setJours] = useState(3);
   const [enCours, setEnCours] = useState(false);
-
-  const tarif = tarifs[niveau] ?? 0;
-  const total = gratuit ? 0 : tarif * jours;
-  const insuffisant = !gratuit && total > solde;
 
   const confirmer = async () => {
     setEnCours(true);
@@ -51,6 +44,13 @@ export function BoosterForm({
     }
   };
 
+  const lienWhatsappPour = (niveauLabel: string, montant: number) =>
+    whatsapp
+      ? `https://wa.me/${whatsapp}?text=${encodeURIComponent(
+          `Bonjour, je suis ${identite}. Je souhaite activer le forfait ${niveauLabel} pendant ${jours} jour${jours > 1 ? "s" : ""} sur mon annonce « ${titre} » (${fcfa(montant)}).`
+        )}`
+      : null;
+
   return (
     <main className="mx-auto max-w-md px-4 py-5">
       <div className="mb-4">
@@ -59,9 +59,6 @@ export function BoosterForm({
 
       <h1 className="text-xl font-medium text-principal">Booster ma visibilité</h1>
       <p className="mt-1 truncate text-sm text-secondaire">Annonce : {titre}</p>
-      <p className="mt-2 flex items-center gap-1.5 text-sm text-secondaire">
-        <Wallet className="h-4 w-4 text-action-verte" /> Solde : <b className="text-principal">{fcfa(solde)}</b>
-      </p>
 
       {gratuit && (
         <div className="mt-3 rounded-carte bg-tint-succes px-4 py-2.5 text-[13px] text-texte-succes">
@@ -69,35 +66,7 @@ export function BoosterForm({
         </div>
       )}
 
-      {/* Niveau */}
-      <div className="mt-5 space-y-2">
-        {NIVEAUX.map((n) => {
-          const on = niveau === n.v;
-          return (
-            <button
-              key={n.v}
-              onClick={() => setNiveau(n.v)}
-              className={
-                "flex w-full items-center gap-3 rounded-carte border p-3 text-left " +
-                (on ? "border-feuille bg-tint-succes" : "border-bordure bg-carte")
-              }
-            >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-carte text-texte-succes">
-                <n.Icon className="h-5 w-5" strokeWidth={1.75} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-medium text-principal">{n.l}</span>
-                <span className="block text-xs text-secondaire">{n.desc}</span>
-              </span>
-              <span className="shrink-0 text-sm font-medium text-principal">
-                {gratuit ? "Offert" : `${fcfa(tarifs[n.v] ?? 0)}/j`}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Durée */}
+      {/* Durée — s'applique à tous les forfaits ci-dessous */}
       <div className="mt-5">
         <div className="mb-2 flex items-center justify-between text-sm">
           <span className="text-principal">Durée</span>
@@ -116,32 +85,74 @@ export function BoosterForm({
         </div>
       </div>
 
-      {/* Total */}
-      <div className="mt-5 flex items-center justify-between rounded-carte border border-bordure bg-carte p-4">
-        <span className="text-sm text-secondaire">Total</span>
-        <span className="text-lg font-medium text-principal">{gratuit ? "Offert (lancement)" : fcfa(total)}</span>
+      {/* Forfaits — chaque forfait détaille ce qu'il fait et a sa propre action */}
+      <div className="mt-5 space-y-2">
+        {FORFAITS_BOOST.map((n) => {
+          const on = niveau === n.v;
+          const Icon = ICONES[n.v];
+          const prixJour = tarifs[n.v] ?? 0;
+          const total = prixJour * jours;
+          const lienWa = lienWhatsappPour(n.label, total);
+          return (
+            <div
+              key={n.v}
+              className={"rounded-carte border p-3 " + (on ? "border-feuille bg-tint-succes" : "border-bordure bg-carte")}
+            >
+              <button type="button" onClick={() => setNiveau(n.v)} className="flex w-full items-center gap-3 text-left">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-carte text-texte-succes">
+                  <Icon className="h-5 w-5" strokeWidth={1.75} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-principal">{n.label}</span>
+                    <span className={`rounded-pill px-1.5 py-0.5 text-[10px] font-medium ${n.badgeClass}`}>{n.label}</span>
+                  </span>
+                  <span className="block text-xs text-secondaire">{n.accroche}</span>
+                </span>
+                <span className="shrink-0 text-sm font-medium text-principal">
+                  {gratuit ? "Offert" : `${fcfa(prixJour)}/j`}
+                </span>
+              </button>
+
+              {on && (
+                <ul className="mt-3 space-y-1.5 border-t border-bordure pt-3">
+                  {n.avantages.map((av) => (
+                    <li key={av} className="flex items-start gap-2 text-xs text-secondaire">
+                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-action-verte" strokeWidth={2.5} />
+                      {av}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {gratuit ? (
+                on && (
+                  <button
+                    onClick={confirmer}
+                    disabled={enCours}
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-champ bg-feuille py-2.5 text-sm font-medium text-sur-vert disabled:opacity-60"
+                  >
+                    {enCours ? "Activation…" : `Activer ${n.label} gratuitement`}
+                  </button>
+                )
+              ) : lienWa ? (
+                <a
+                  href={lienWa}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-champ bg-feuille py-2.5 text-sm font-medium text-sur-vert"
+                >
+                  <MessageCircle className="h-4 w-4" /> {n.label} — {fcfa(total)} sur WhatsApp
+                </a>
+              ) : (
+                <p className="mt-3 text-center text-[11px] text-tertiaire">Boost payant momentanément indisponible.</p>
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      {insuffisant ? (
-        <>
-          <p className="mt-3 flex items-center gap-1.5 text-sm text-vip">
-            <CircleAlert className="h-4 w-4" /> Solde insuffisant.
-          </p>
-          <p className="mt-2 text-center text-[12px] text-secondaire">
-            Le rechargement en ligne est momentanément indisponible.
-          </p>
-        </>
-      ) : (
-        <button
-          onClick={confirmer}
-          disabled={enCours}
-          className="mt-5 flex w-full items-center justify-center gap-2 rounded-champ bg-feuille py-3 text-sm font-medium text-sur-vert disabled:opacity-60"
-        >
-          <Wallet className="h-4 w-4" /> {enCours ? "Activation…" : gratuit ? "Activer gratuitement" : `Payer ${fcfa(total)}`}
-        </button>
-      )}
-
-      <p className="mt-3 text-center text-[11px] text-tertiaire">
+      <p className="mt-4 text-center text-[11px] text-tertiaire">
         La mise en avant expire automatiquement après la durée choisie (l'annonce redevient standard).
       </p>
     </main>

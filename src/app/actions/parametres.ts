@@ -14,23 +14,6 @@ async function setParam(cle: string, valeur: string) {
   await db.parametre.upsert({ where: { cle }, create: { cle, valeur }, update: { valeur } });
 }
 
-export async function enregistrerParrainage(
-  taux: number,
-  dureeMois: number
-): Promise<{ ok?: boolean; error?: string }> {
-  if (!(await exigerAdmin())) return { error: "Accès refusé." };
-  const t = Math.round(Number(taux));
-  const d = Math.round(Number(dureeMois));
-  if (!Number.isFinite(t) || t < 0 || t > 100) return { error: "Taux invalide (0–100)." };
-  if (!Number.isFinite(d) || d < 1 || d > 60) return { error: "Durée invalide (1–60 mois)." };
-  await setParam("parrainage_taux", String(t));
-  await setParam("parrainage_duree_mois", String(d));
-  revalidatePath("/admin");
-  revalidatePath("/compte");
-  revalidatePath("/parrainage");
-  return { ok: true };
-}
-
 export async function enregistrerTarifs(
   tarifs: { URGENT: number; TOP: number; VIP: number; PREMIUM: number },
 ): Promise<{ ok?: boolean; error?: string }> {
@@ -42,7 +25,17 @@ export async function enregistrerTarifs(
     await setParam(cle, String(v));
   }
   revalidatePath("/admin");
-  revalidatePath("/premium");
+  revalidatePath("/booster");
+  return { ok: true };
+}
+
+export async function enregistrerWhatsappSupport(numero: string): Promise<{ ok?: boolean; error?: string }> {
+  if (!(await exigerAdmin())) return { error: "Accès refusé." };
+  const n = (numero ?? "").replace(/\D/g, "");
+  if (n.length > 0 && n.length < 8) return { error: "Numéro invalide." };
+  await setParam("whatsapp_support", n);
+  revalidatePath("/admin");
+  revalidatePath("/compte");
   revalidatePath("/booster");
   return { ok: true };
 }
