@@ -5,6 +5,7 @@ import { AgeGate } from "@/components/AgeGate";
 import { Presence } from "@/components/Presence";
 import { BottomNav } from "@/components/BottomNav";
 import { PWARegister } from "@/components/PWARegister";
+import { VisiteTracker } from "@/components/VisiteTracker";
 
 export const metadata: Metadata = {
   title: "Rose Annonce — annonces vérifiées au Cameroun",
@@ -41,6 +42,7 @@ export default function RootLayout({
       </head>
       <body>
         <PWARegister />
+        <VisiteTracker />
         <AgeGate />
         <Presence />
         <ToastProvider>{children}</ToastProvider>

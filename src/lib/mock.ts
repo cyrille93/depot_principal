@@ -60,7 +60,7 @@ export type ProfilDetail = ProfilFictif & {
   tauxReponse: number; // %
   delaiReponseMin: number;
   galerie: number; // nb de médias
-  medias?: { url: string; floutee: boolean }[];
+  medias?: { url: string; floutee: boolean; type?: "PHOTO" | "VIDEO" }[];
   criteres: { label: string; note: number }[];
   verif: { telephone: boolean; identite: boolean; selfie: boolean };
   telephoneContact?: string | null;

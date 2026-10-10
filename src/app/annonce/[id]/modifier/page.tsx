@@ -24,8 +24,10 @@ export default async function ModifierPage({
         categorie: true,
         prix: true,
         villeId: true,
+        whatsapp: true,
+        nomAnnonceur: true,
         userId: true,
-        medias: { select: { url: true, floutee: true, visagesFloutes: true, ordre: true }, orderBy: { ordre: "asc" } },
+        medias: { select: { url: true, floutee: true, visagesFloutes: true, ordre: true, type: true }, orderBy: { ordre: "asc" } },
       },
     }),
     db.ville.findMany({ where: { actif: true }, orderBy: { nom: "asc" }, select: { id: true, nom: true } }),
@@ -37,6 +39,7 @@ export default async function ModifierPage({
   const medias = (annonce.medias as any[]).map((m) => ({
     src: m.url as string,
     floutes: (m.visagesFloutes as number) ?? 0,
+    type: (m.type as "PHOTO" | "VIDEO") ?? "PHOTO",
   }));
 
   return (
@@ -48,6 +51,8 @@ export default async function ModifierPage({
         categorie: annonce.categorie,
         prix: annonce.prix,
         villeId: annonce.villeId,
+        whatsapp: annonce.whatsapp ?? "",
+        nomAnnonceur: annonce.nomAnnonceur ?? "",
       }}
       mediasInit={medias}
       villes={villes}

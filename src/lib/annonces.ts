@@ -54,7 +54,7 @@ function versCarte(a: {
   boostExpire?: Date | null;
   miseEnAvant?: string;
   nbVues?: number;
-  medias?: { url: string; ordre: number }[];
+  medias?: { url: string; ordre: number; type?: "PHOTO" | "VIDEO" }[];
   ville: { nom: string };
   user: { niveauVerification: number; profil: { pseudo: string; noteMoyenne: number; nombreAvis: number; disponible?: boolean } | null };
   _count?: { favoris: number };
@@ -63,7 +63,11 @@ function versCarte(a: {
   // La mise en avant n'est valable que si elle n'est pas expirée (0 à 5 jours) — sinon standard
   const actif = !!a.boostExpire && new Date(a.boostExpire) > new Date();
   const badge: Badge = actif && a.miseEnAvant ? BADGE_PAR_NIVEAU[a.miseEnAvant] ?? null : null;
-  const premiere = (a.medias ?? []).slice().sort((x, y) => x.ordre - y.ordre)[0]?.url;
+  // Vignette de carte : on prend la première PHOTO (jamais une vidéo, qui casserait la balise image).
+  const premiere = (a.medias ?? [])
+    .filter((m) => (m.type ?? "PHOTO") === "PHOTO")
+    .slice()
+    .sort((x, y) => x.ordre - y.ordre)[0]?.url;
   const photo = premiere && (premiere.startsWith("data:") || premiere.startsWith("http")) ? premiere : undefined;
   return {
     id: a.id,
@@ -144,7 +148,7 @@ export async function listerAnnonces(filtres?: FiltresAnnonces, userId?: string)
 
   const annonces = await db.annonce.findMany({
     where,
-    include: { ville: true, user: { include: { profil: true } }, medias: { select: { url: true, ordre: true } }, _count: { select: { favoris: true } } },
+    include: { ville: true, user: { include: { profil: true } }, medias: { select: { url: true, ordre: true, type: true } }, _count: { select: { favoris: true } } },
     // 1) Marque décroissante : PREMIUM > TOP > VIP > URGENT > STANDARD (ordre de l'enum).
     //    La tâche planifiée repasse les marques expirées en STANDARD → l'ordre reste juste.
     // 2) Tri secondaire choisi. 3) La plus récente d'abord.
@@ -232,10 +236,10 @@ export async function getAnnonceDetail(id: string): Promise<ProfilDetail | null>
     tauxReponse: p?.tauxReponse ?? 0,
     delaiReponseMin: 5,
     galerie: a.medias.length || 1,
-    medias: (a.medias as { url: string; floutee: boolean; ordre: number }[])
+    medias: (a.medias as { url: string; floutee: boolean; ordre: number; type?: "PHOTO" | "VIDEO" }[])
       .slice()
       .sort((x, y) => x.ordre - y.ordre)
-      .map((m) => ({ url: m.url, floutee: m.floutee })),
+      .map((m) => ({ url: m.url, floutee: m.floutee, type: m.type ?? "PHOTO" })),
     criteres,
     verif: {
       telephone: a.user.telephoneVerifie,

@@ -21,6 +21,7 @@ import {
   X,
   ChevronRight,
   Expand,
+  Video,
 } from "lucide-react";
 import type { ProfilDetail } from "@/lib/mock";
 import type { MonAvis } from "@/lib/annonces";
@@ -191,7 +192,7 @@ function Lightbox({
   onClose,
   estImg,
 }: {
-  medias: { url?: string; floutee?: boolean }[];
+  medias: { url?: string; floutee?: boolean; type?: "PHOTO" | "VIDEO" }[];
   index: number;
   onIndex: (i: number) => void;
   onClose: () => void;
@@ -252,7 +253,10 @@ function Lightbox({
         className="relative flex max-h-full max-w-full items-center justify-center"
         onClick={(e) => e.stopPropagation()}
       >
-        {estImg(m.url) ? (
+        {m.type === "VIDEO" && m.url ? (
+          // eslint-disable-next-line jsx-a11y/media-has-caption
+          <video src={m.url} controls autoPlay className="max-h-[90vh] max-w-full object-contain" />
+        ) : estImg(m.url) ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={m.url} alt="" className="max-h-[90vh] max-w-full object-contain" />
@@ -309,11 +313,14 @@ export function FicheProfil({
           <div
             className={
               "relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-carte bg-media sm:aspect-[16/10]" +
-              (estImg(courant.url) ? " cursor-zoom-in" : "")
+              (courant.type !== "VIDEO" && estImg(courant.url) ? " cursor-zoom-in" : "")
             }
-            onClick={() => estImg(courant.url) && setLightbox(true)}
+            onClick={() => courant.type !== "VIDEO" && estImg(courant.url) && setLightbox(true)}
           >
-            {estImg(courant.url) ? (
+            {courant.type === "VIDEO" && courant.url ? (
+              // eslint-disable-next-line jsx-a11y/media-has-caption
+              <video src={courant.url} controls className="absolute inset-0 h-full w-full bg-black object-contain" onClick={(e) => e.stopPropagation()} />
+            ) : estImg(courant.url) ? (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={courant.url} alt="" className="absolute inset-0 h-full w-full object-cover" />
@@ -362,7 +369,15 @@ export function FicheProfil({
                 }
                 aria-label={`Média ${i + 1}`}
               >
-                {estImg(m.url) ? (
+                {m.type === "VIDEO" && m.url ? (
+                  <span className="relative h-full w-full">
+                    {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                    <video src={m.url} className="h-full w-full object-cover" muted />
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/30">
+                      <Video className="h-4 w-4 text-white" />
+                    </span>
+                  </span>
+                ) : estImg(m.url) ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={m.url} alt="" className="h-full w-full object-cover" />
                 ) : (

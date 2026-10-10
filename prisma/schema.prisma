@@ -52,6 +52,7 @@ enum NiveauMiseEnAvant {
 
 enum TypeMedia {
   PHOTO
+  VIDEO
 }
 
 enum TypeVerification {
@@ -531,4 +532,16 @@ model DemandeReset {
   statut      StatutDemandeReset @default(OUVERTE)
   createdAt   DateTime           @default(now())
   traiteeAt   DateTime?
+}
+
+// Suivi léger des visites pour les statistiques globales de l'admin
+// (nombre de visites, temps moyen). Aucun lien nominatif avec un compte.
+model VisiteSession {
+  id               String   @id @default(cuid())
+  sessionId        String   @unique
+  debut            DateTime @default(now())
+  derniereActivite DateTime @default(now())
+  nbEvenements     Int      @default(1)
+
+  @@index([debut])
 }

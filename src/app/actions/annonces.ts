@@ -24,12 +24,13 @@ export async function creerAnnonce(
   const whatsapp = String(formData.get("whatsapp") ?? "").trim();
   const nomAnnonceur = String(formData.get("nomAnnonceur") ?? "").trim();
 
-  let medias: { floutes: number; src?: string }[] = [];
+  let medias: { floutes: number; src?: string; type?: string }[] = [];
   try {
     medias = JSON.parse(String(formData.get("medias") ?? "[]"));
   } catch {
     medias = [];
   }
+  const aVideo = medias.some((m) => m?.type === "VIDEO");
 
   if (titre.length < 3) return { error: "Le titre est trop court (3 caractères min)." };
   if (description.length < 10) return { error: "La description est trop courte." };
@@ -56,17 +57,24 @@ export async function creerAnnonce(
       prix: Math.round(prix),
       whatsapp,
       nomAnnonceur,
-      statut: "ACTIVE",
+      // Une annonce contenant une vidéo passe en modération avant publication
+      // (contrôle anti-mineurs / conformité). Sinon, publication directe.
+      statut: aVideo ? "EN_ATTENTE" : "ACTIVE",
       userId: session.user.id,
       villeId,
       medias: {
-        create: medias.map((m, o) => ({
-          type: "PHOTO" as const,
-          url: m?.src && m.src.startsWith("data:") ? m.src : `/media/placeholder-${o}.jpg`,
-          floutee: (m?.floutes ?? 0) > 0,
-          visagesFloutes: m?.floutes ?? 0,
-          ordre: o,
-        })),
+        create: medias.map((m, o) => {
+          const estVideo = m?.type === "VIDEO";
+          const src = m?.src ?? "";
+          const urlOk = src.startsWith("data:") || src.startsWith("http");
+          return {
+            type: estVideo ? ("VIDEO" as const) : ("PHOTO" as const),
+            url: urlOk ? src : `/media/placeholder-${o}.jpg`,
+            floutee: !estVideo && (m?.floutes ?? 0) > 0,
+            visagesFloutes: estVideo ? 0 : m?.floutes ?? 0,
+            ordre: o,
+          };
+        }),
       },
     },
   });
@@ -87,6 +95,8 @@ export async function modifierAnnonce(
   const categorie = String(formData.get("categorie") ?? "");
   const villeId = String(formData.get("villeId") ?? "");
   const prix = Number(formData.get("prix") ?? 0);
+  const whatsapp = String(formData.get("whatsapp") ?? "").trim();
+  const nomAnnonceur = String(formData.get("nomAnnonceur") ?? "").trim();
 
   if (!id) return { error: "Annonce introuvable." };
   if (titre.length < 3) return { error: "Le titre est trop court (3 caractères min)." };
@@ -94,11 +104,13 @@ export async function modifierAnnonce(
   if (!CATS.includes(categorie as Cat)) return { error: "Catégorie invalide." };
   if (!villeId) return { error: "Choisissez une ville." };
   if (!Number.isFinite(prix) || prix < 0) return { error: "Tarif invalide." };
+  if (nomAnnonceur.length < 2) return { error: "Indiquez le nom de l'annonceur." };
+  if (whatsapp.replace(/\D/g, "").length < 8) return { error: "Numéro WhatsApp invalide." };
 
   const a = await db.annonce.findUnique({ where: { id }, select: { userId: true } });
   if (!a || a.userId !== session.user.id) return { error: "Annonce introuvable ou non autorisée." };
 
-  let medias: { floutes: number; src?: string }[] | null = null;
+  let medias: { floutes: number; src?: string; type?: string }[] | null = null;
   const mediasRaw = formData.get("medias");
   if (mediasRaw != null) {
     try {
@@ -107,27 +119,37 @@ export async function modifierAnnonce(
       medias = null;
     }
   }
+  const aVideo = !!medias && medias.some((m) => m?.type === "VIDEO");
 
   await db.$transaction(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async (tx: any) => {
       await tx.annonce.update({
         where: { id },
-        data: { titre, description, categorie: categorie as Cat, prix: Math.round(prix), villeId },
+        data: {
+          titre, description, categorie: categorie as Cat, prix: Math.round(prix), villeId, whatsapp, nomAnnonceur,
+          // Si une vidéo est présente après modification, repasse en modération.
+          ...(aVideo ? { statut: "EN_ATTENTE" as const } : {}),
+        },
       });
       // Si la galerie a été modifiée, on remplace l'ensemble des médias
       if (medias) {
         await tx.media.deleteMany({ where: { annonceId: id } });
         if (medias.length) {
           await tx.media.createMany({
-            data: medias.map((m, o) => ({
-              annonceId: id,
-              type: "PHOTO" as const,
-              url: m?.src && m.src.startsWith("data:") ? m.src : `/media/placeholder-${o}.jpg`,
-              floutee: (m?.floutes ?? 0) > 0,
-              visagesFloutes: m?.floutes ?? 0,
-              ordre: o,
-            })),
+            data: medias.map((m, o) => {
+              const estVideo = m?.type === "VIDEO";
+              const src = m?.src ?? "";
+              const urlOk = src.startsWith("data:") || src.startsWith("http");
+              return {
+                annonceId: id,
+                type: estVideo ? ("VIDEO" as const) : ("PHOTO" as const),
+                url: urlOk ? src : `/media/placeholder-${o}.jpg`,
+                floutee: !estVideo && (m?.floutes ?? 0) > 0,
+                visagesFloutes: estVideo ? 0 : m?.floutes ?? 0,
+                ordre: o,
+              };
+            }),
           });
         }
       }

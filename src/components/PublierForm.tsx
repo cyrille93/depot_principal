@@ -2,10 +2,13 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ImagePlus, EyeOff, ShieldAlert, Check, CircleAlert } from "lucide-react";
+import { ChevronLeft, ImagePlus, EyeOff, ShieldAlert, Check, CircleAlert, Video, X } from "lucide-react";
 import { FloutageEditor } from "@/components/FloutageEditor";
 import { creerAnnonce, type AnnonceState } from "@/app/actions/annonces";
+import { uploadVideoCloudinary, cloudinaryConfigure } from "@/lib/cloudinary-client";
 import { useToast } from "@/components/Toast";
+
+const MAX_VIDEOS = 2;
 
 const CATS = [
   { v: "RENCONTRE", l: "Rencontre" },
@@ -19,10 +22,36 @@ let mseq = 0;
 
 export function PublierForm({ villes }: { villes: { id: string; nom: string }[] }) {
   const [medias, setMedias] = useState<Media[]>([]);
+  const [videos, setVideos] = useState<{ id: string; url: string }[]>([]);
+  const [uploadPct, setUploadPct] = useState<number | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [state, action, pending] = useActionState<AnnonceState, FormData>(creerAnnonce, {});
   const fileRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLInputElement>(null);
   const toast = useToast();
+
+  const onVideos = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!cloudinaryConfigure()) {
+      toast("L'ajout de vidéo n'est pas encore configuré.", "error");
+      return;
+    }
+    if (videos.length >= MAX_VIDEOS) {
+      toast(`Maximum ${MAX_VIDEOS} vidéos par annonce.`, "error");
+      return;
+    }
+    setUploadPct(0);
+    const res = await uploadVideoCloudinary(file, (p) => setUploadPct(p));
+    setUploadPct(null);
+    if (res.ok && res.url) {
+      setVideos((v) => [...v, { id: `v${mseq++}`, url: res.url! }]);
+      toast("Vidéo ajoutée.", "success");
+    } else {
+      toast(res.error ?? "Échec de l'envoi de la vidéo.", "error");
+    }
+  };
 
   useEffect(() => {
     if (state.error) toast(state.error, "error");
@@ -247,7 +276,59 @@ export function PublierForm({ villes }: { villes: { id: string; nom: string }[] 
           />
         </div>
 
-        <input type="hidden" name="medias" value={JSON.stringify(medias.map((m) => ({ floutes: m.floutes, src: m.src })))} />
+        {/* Vidéos */}
+        <div>
+          <label className="mb-1 block text-sm text-principal">
+            Vidéos <span className="text-tertiaire">({videos.length}/{MAX_VIDEOS}) — optionnel</span>
+          </label>
+          <p className="mb-2 flex items-center gap-1.5 text-xs text-secondaire">
+            <ShieldAlert className="h-4 w-4 text-action-verte" /> Vidéo courte, 100 Mo maximum. Floutez les visages avant d'envoyer : le floutage n'est pas automatique sur les vidéos.
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {videos.map((v) => (
+              <div key={v.id} className="relative overflow-hidden rounded-petit bg-media">
+                {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                <video src={v.url} controls className="h-32 w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setVideos((list) => list.filter((x) => x.id !== v.id))}
+                  aria-label="Retirer la vidéo"
+                  className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-pill bg-carte text-secondaire shadow-sm"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+            {videos.length < MAX_VIDEOS && uploadPct === null && (
+              <button
+                type="button"
+                onClick={() => videoRef.current?.click()}
+                className="flex h-32 flex-col items-center justify-center gap-1 rounded-petit border border-dashed border-bordure-forte text-secondaire"
+              >
+                <Video className="h-5 w-5" />
+                <span className="text-[11px]">Ajouter une vidéo</span>
+              </button>
+            )}
+            {uploadPct !== null && (
+              <div className="flex h-32 flex-col items-center justify-center gap-2 rounded-petit border border-dashed border-bordure-forte text-secondaire">
+                <span className="text-xs">Envoi… {uploadPct}%</span>
+                <span className="h-1.5 w-20 overflow-hidden rounded-pill bg-surface-neutre">
+                  <span className="block h-full bg-feuille" style={{ width: `${uploadPct}%` }} />
+                </span>
+              </div>
+            )}
+          </div>
+          <input ref={videoRef} type="file" accept="video/*" onChange={onVideos} className="hidden" />
+        </div>
+
+        <input
+          type="hidden"
+          name="medias"
+          value={JSON.stringify([
+            ...medias.map((m) => ({ type: "PHOTO", floutes: m.floutes, src: m.src })),
+            ...videos.map((v) => ({ type: "VIDEO", floutes: 0, src: v.url })),
+          ])}
+        />
 
         {state.error && (
           <p className="flex items-center gap-1.5 text-sm text-vip" role="alert">
