@@ -663,6 +663,13 @@ export function AdminClient({
                 <span className="text-sm font-medium text-principal">Statistiques de fréquentation</span>
                 <span className="text-xs text-action-verte">Visites, temps moyen →</span>
               </Link>
+              <Link
+                href="/admin/galerie"
+                className="mt-3 flex items-center justify-between rounded-carte border border-bordure bg-carte p-4 hover:border-feuille"
+              >
+                <span className="text-sm font-medium text-principal">Galerie vidéo</span>
+                <span className="text-xs text-action-verte">Charger des vidéos →</span>
+              </Link>
               <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-2">
                 {AnnoncesSection}
                 {SignalementsSection}

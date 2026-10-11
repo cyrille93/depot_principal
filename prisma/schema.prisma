@@ -545,3 +545,16 @@ model VisiteSession {
 
   @@index([debut])
 }
+
+// Galerie de vidéos gérée par l'administration (mise en avant sur l'accueil).
+// Indépendante des annonces : l'admin y charge des vidéos avec titre et description.
+model VideoGalerie {
+  id          String   @id @default(cuid())
+  titre       String
+  description String?
+  url         String // URL Cloudinary de la vidéo
+  ordre       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([ordre])
+}

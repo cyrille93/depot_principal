@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Video } from "lucide-react";
 import type { ProfilFictif } from "@/lib/mock";
 import { ProfilCard } from "@/components/ProfilCard";
 import { Pagination } from "@/components/Pagination";
@@ -120,6 +120,12 @@ export function AccueilUnifie({
           <Link href="/" aria-label="Accueil"><Logo className="h-9" /></Link>
           <div className="hidden flex-1 md:flex">{BarreRecherche}</div>
           <div className="ml-auto flex items-center gap-3">
+            <Link
+              href="/galerie"
+              className="flex items-center gap-1.5 rounded-champ border border-feuille px-3 py-2 text-sm font-medium text-action-verte"
+            >
+              <Video className="h-4 w-4" /><span className="hidden sm:inline">Galerie vidéo</span>
+            </Link>
             <NotificationsBell />
             <Link href="/messages" aria-label="Messages" className="text-action-verte">💬</Link>
             <Link href="/publier" className="flex items-center gap-1.5 rounded-champ bg-feuille px-3 py-2 text-sm font-medium text-sur-vert">
