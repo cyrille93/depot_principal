@@ -11,7 +11,7 @@ async function exigerAdmin(): Promise<boolean> {
   return session?.user?.role === "ADMIN";
 }
 
-// Ajoute une vidéo à la galerie (admin). L'URL vient d'un upload Cloudinary.
+// Ajoute une vidéo à la galerie (admin). L'URL vient d'un upload Vercel Blob.
 export async function ajouterVideoGalerie(
   titre: string,
   description: string,

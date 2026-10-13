@@ -552,7 +552,7 @@ model VideoGalerie {
   id          String   @id @default(cuid())
   titre       String
   description String?
-  url         String // URL Cloudinary de la vidéo
+  url         String // URL Vercel Blob de la vidéo
   ordre       Int      @default(0)
   createdAt   DateTime @default(now())
 

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, CircleAlert, ImagePlus, EyeOff, ShieldAlert, X, Video } from "lucide-react";
 import { FloutageEditor } from "@/components/FloutageEditor";
 import { modifierAnnonce, type AnnonceState } from "@/app/actions/annonces";
-import { uploadVideoCloudinary, cloudinaryConfigure } from "@/lib/cloudinary-client";
+import { uploadVideoBlob } from "@/lib/blob-client";
 import { useToast } from "@/components/Toast";
 
 const MAX_VIDEOS = 2;
@@ -59,16 +59,12 @@ export function ModifierAnnonceForm({
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    if (!cloudinaryConfigure()) {
-      toast("L'ajout de vidéo n'est pas encore configuré.", "error");
-      return;
-    }
     if (videos.length >= MAX_VIDEOS) {
       toast(`Maximum ${MAX_VIDEOS} vidéos par annonce.`, "error");
       return;
     }
     setUploadPct(0);
-    const res = await uploadVideoCloudinary(file, (p) => setUploadPct(p));
+    const res = await uploadVideoBlob(file, (p) => setUploadPct(p));
     setUploadPct(null);
     if (res.ok && res.url) {
       setVideos((v) => [...v, { id: `v${mseq++}`, url: res.url! }]);

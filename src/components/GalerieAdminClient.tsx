@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Video, X, Upload } from "lucide-react";
 import { ajouterVideoGalerie, supprimerVideoGalerie } from "@/app/actions/galerie";
-import { uploadVideoCloudinary, cloudinaryConfigure } from "@/lib/cloudinary-client";
+import { uploadVideoBlob } from "@/lib/blob-client";
 import { useToast } from "@/components/Toast";
 
 type VideoItem = { id: string; titre: string; description: string | null; url: string };
@@ -24,12 +24,8 @@ export function GalerieAdminClient({ videos }: { videos: VideoItem[] }) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    if (!cloudinaryConfigure()) {
-      toast("L'hébergement vidéo n'est pas configuré.", "error");
-      return;
-    }
     setUploadPct(0);
-    const res = await uploadVideoCloudinary(file, (p) => setUploadPct(p));
+    const res = await uploadVideoBlob(file, (p) => setUploadPct(p));
     setUploadPct(null);
     if (res.ok && res.url) {
       setUrl(res.url);
