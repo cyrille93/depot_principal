@@ -42,37 +42,57 @@ export default async function GaleriePage() {
   const estConnecte = !!session?.user;
   const estAdmin = session?.user?.role === "ADMIN";
 
-  const rows = (await db.videoGalerie.findMany({
-    orderBy: [{ ordre: "asc" }, { createdAt: "desc" }],
-    select: {
-      id: true,
-      titre: true,
-      description: true,
-      url: true,
-      vues: true,
-      _count: { select: { likes: true, commentaires: true } },
-      commentaires: {
-        orderBy: { createdAt: "desc" },
-        take: 50,
-        select: {
-          id: true,
-          contenu: true,
-          createdAt: true,
-          userId: true,
-          user: { select: { profil: { select: { pseudo: true } } } },
+  let rows: LigneVideo[] = [];
+  try {
+    rows = (await db.videoGalerie.findMany({
+      orderBy: [{ ordre: "asc" }, { createdAt: "desc" }],
+      select: {
+        id: true,
+        titre: true,
+        description: true,
+        url: true,
+        vues: true,
+        _count: { select: { likes: true, commentaires: true } },
+        commentaires: {
+          orderBy: { createdAt: "desc" },
+          take: 50,
+          select: {
+            id: true,
+            contenu: true,
+            createdAt: true,
+            userId: true,
+            user: { select: { profil: { select: { pseudo: true } } } },
+          },
         },
       },
-    },
-  })) as LigneVideo[];
+    })) as LigneVideo[];
+  } catch {
+    // Migration pas encore appliquée : on affiche les vidéos sans les interactions
+    // plutôt que de planter la page.
+    const base = (await db.videoGalerie.findMany({
+      orderBy: [{ ordre: "asc" }, { createdAt: "desc" }],
+      select: { id: true, titre: true, description: true, url: true },
+    })) as { id: string; titre: string; description: string | null; url: string }[];
+    rows = base.map((b) => ({
+      ...b,
+      vues: 0,
+      _count: { likes: 0, commentaires: 0 },
+      commentaires: [],
+    }));
+  }
 
   // Vidéos aimées par l'utilisateur connecté (pour pré-remplir l'état du cœur)
   let aimees = new Set<string>();
   if (userId && rows.length) {
-    const likes = (await db.videoGalerieLike.findMany({
-      where: { userId, videoId: { in: rows.map((r) => r.id) } },
-      select: { videoId: true },
-    })) as { videoId: string }[];
-    aimees = new Set(likes.map((l) => l.videoId));
+    try {
+      const likes = (await db.videoGalerieLike.findMany({
+        where: { userId, videoId: { in: rows.map((r) => r.id) } },
+        select: { videoId: true },
+      })) as { videoId: string }[];
+      aimees = new Set(likes.map((l) => l.videoId));
+    } catch {
+      /* table absente : aucun j'aime pré-rempli */
+    }
   }
 
   const videos: VideoGalerieVue[] = rows.map((v) => ({
