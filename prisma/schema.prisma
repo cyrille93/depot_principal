@@ -201,6 +201,8 @@ model User {
   blocagesRecus      Blocage[]          @relation("Bloque")
   notifications      Notification[]
   demandesReset      DemandeReset[]
+  videoLikes         VideoGalerieLike[]
+  videoCommentaires  VideoGalerieCommentaire[]
 
   @@index([paysId])
 }
@@ -554,7 +556,38 @@ model VideoGalerie {
   description String?
   url         String // URL Vercel Blob de la vidéo
   ordre       Int      @default(0)
+  vues        Int      @default(0)
   createdAt   DateTime @default(now())
 
+  likes        VideoGalerieLike[]
+  commentaires VideoGalerieCommentaire[]
+
   @@index([ordre])
+}
+
+// J'aime sur une vidéo de la galerie (1 par utilisateur connecté)
+model VideoGalerieLike {
+  id        String       @id @default(cuid())
+  videoId   String
+  userId    String
+  createdAt DateTime     @default(now())
+  video     VideoGalerie @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([videoId, userId])
+  @@index([videoId])
+}
+
+// Commentaire sur une vidéo de la galerie (utilisateur connecté)
+model VideoGalerieCommentaire {
+  id        String       @id @default(cuid())
+  videoId   String
+  userId    String
+  contenu   String
+  createdAt DateTime     @default(now())
+  video     VideoGalerie @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([videoId])
+  @@index([createdAt])
 }

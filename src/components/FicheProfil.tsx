@@ -255,7 +255,7 @@ function Lightbox({
       >
         {m.type === "VIDEO" && m.url ? (
           // eslint-disable-next-line jsx-a11y/media-has-caption
-          <video src={m.url} controls autoPlay className="max-h-[90vh] max-w-full object-contain" />
+          <video src={m.url} controls autoPlay controlsList="nodownload noplaybackrate noremoteplayback" disablePictureInPicture onContextMenu={(e) => e.preventDefault()} className="max-h-[90vh] max-w-full object-contain" />
         ) : estImg(m.url) ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -319,7 +319,7 @@ export function FicheProfil({
           >
             {courant.type === "VIDEO" && courant.url ? (
               // eslint-disable-next-line jsx-a11y/media-has-caption
-              <video src={courant.url} controls className="absolute inset-0 h-full w-full bg-black object-contain" onClick={(e) => e.stopPropagation()} />
+              <video src={courant.url} controls controlsList="nodownload noplaybackrate noremoteplayback" disablePictureInPicture onContextMenu={(e) => e.preventDefault()} className="absolute inset-0 h-full w-full bg-black object-contain" onClick={(e) => e.stopPropagation()} />
             ) : estImg(courant.url) ? (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -372,7 +372,7 @@ export function FicheProfil({
                 {m.type === "VIDEO" && m.url ? (
                   <span className="relative h-full w-full">
                     {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-                    <video src={m.url} className="h-full w-full object-cover" muted />
+                    <video src={m.url} className="h-full w-full object-cover" muted disablePictureInPicture onContextMenu={(e) => e.preventDefault()} />
                     <span className="absolute inset-0 flex items-center justify-center bg-black/30">
                       <Video className="h-4 w-4 text-white" />
                     </span>

@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronLeft, Video } from "lucide-react";
+import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { MARQUE_SEO, SITE_URL } from "@/lib/seo";
+import { GalerieVideoCarte, type VideoGalerieVue } from "@/components/GalerieVideoCarte";
 
 export const dynamic = "force-dynamic";
 
@@ -12,13 +14,84 @@ export const metadata: Metadata = {
   alternates: { canonical: `${SITE_URL}/galerie` },
 };
 
-type VideoRow = { id: string; titre: string; description: string | null; url: string };
+function dateFr(d: Date): string {
+  return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(d);
+}
+
+// Formes exactes renvoyées par les requêtes (sélections ci-dessous).
+type LigneCommentaire = {
+  id: string;
+  contenu: string;
+  createdAt: Date;
+  userId: string;
+  user: { profil: { pseudo: string } | null };
+};
+type LigneVideo = {
+  id: string;
+  titre: string;
+  description: string | null;
+  url: string;
+  vues: number;
+  _count: { likes: number; commentaires: number };
+  commentaires: LigneCommentaire[];
+};
 
 export default async function GaleriePage() {
-  const videos = (await db.videoGalerie.findMany({
+  const session = await auth();
+  const userId = session?.user?.id ?? null;
+  const estConnecte = !!session?.user;
+  const estAdmin = session?.user?.role === "ADMIN";
+
+  const rows = (await db.videoGalerie.findMany({
     orderBy: [{ ordre: "asc" }, { createdAt: "desc" }],
-    select: { id: true, titre: true, description: true, url: true },
-  })) as VideoRow[];
+    select: {
+      id: true,
+      titre: true,
+      description: true,
+      url: true,
+      vues: true,
+      _count: { select: { likes: true, commentaires: true } },
+      commentaires: {
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        select: {
+          id: true,
+          contenu: true,
+          createdAt: true,
+          userId: true,
+          user: { select: { profil: { select: { pseudo: true } } } },
+        },
+      },
+    },
+  })) as LigneVideo[];
+
+  // Vidéos aimées par l'utilisateur connecté (pour pré-remplir l'état du cœur)
+  let aimees = new Set<string>();
+  if (userId && rows.length) {
+    const likes = (await db.videoGalerieLike.findMany({
+      where: { userId, videoId: { in: rows.map((r) => r.id) } },
+      select: { videoId: true },
+    })) as { videoId: string }[];
+    aimees = new Set(likes.map((l) => l.videoId));
+  }
+
+  const videos: VideoGalerieVue[] = rows.map((v) => ({
+    id: v.id,
+    titre: v.titre,
+    description: v.description,
+    url: v.url,
+    vues: v.vues,
+    nbLikes: v._count.likes,
+    nbCommentaires: v._count.commentaires,
+    aime: aimees.has(v.id),
+    commentaires: v.commentaires.map((c) => ({
+      id: c.id,
+      contenu: c.contenu,
+      auteur: c.user.profil?.pseudo?.trim() || "Membre",
+      date: dateFr(c.createdAt),
+      peutSupprimer: estAdmin || c.userId === userId,
+    })),
+  }));
 
   return (
     <main className="mx-auto min-h-screen max-w-5xl px-4 py-5">
@@ -38,18 +111,9 @@ export default async function GaleriePage() {
           Aucune vidéo pour le moment.
         </div>
       ) : (
-        <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid grid-cols-1 items-start gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {videos.map((v) => (
-            <div key={v.id} className="overflow-hidden rounded-carte border border-bordure bg-carte">
-              <div className="aspect-video bg-black">
-                {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-                <video src={v.url} controls preload="metadata" className="h-full w-full object-contain" />
-              </div>
-              <div className="p-3">
-                <h2 className="text-sm font-medium text-principal">{v.titre}</h2>
-                {v.description && <p className="mt-1 text-xs text-secondaire">{v.description}</p>}
-              </div>
-            </div>
+            <GalerieVideoCarte key={v.id} video={v} estConnecte={estConnecte} />
           ))}
         </div>
       )}
