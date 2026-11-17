@@ -36,6 +36,17 @@ function issuersAcceptes(): string[] {
   ];
 }
 
+// Accepte l'audience avec OU sans le préfixe "api://". Les jetons v2.0 portent
+// souvent le GUID seul (ex. 7800...8f9) tandis que les jetons v1.0 portent la
+// forme api://<guid>. On tolère les deux pour éviter un rejet d'audience.
+function audiencesAcceptees(): string[] {
+  if (!audience) return [];
+  const set = new Set<string>([audience]);
+  if (audience.startsWith("api://")) set.add(audience.slice("api://".length));
+  else set.add(`api://${audience}`);
+  return [...set];
+}
+
 export type ResultatAuth =
   | { ok: true; claims: JWTPayload }
   | { ok: false; status: number; code: string; message: string };
@@ -60,7 +71,7 @@ export async function verifierAdminEntra(request: Request): Promise<ResultatAuth
   try {
     const res = await jwtVerify(token, getJwks(), {
       issuer: issuersAcceptes(),
-      audience,
+      audience: audiencesAcceptees(),
     });
     payload = res.payload;
   } catch {
